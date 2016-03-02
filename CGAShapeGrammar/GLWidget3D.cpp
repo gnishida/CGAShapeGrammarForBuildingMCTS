@@ -529,7 +529,7 @@ void GLWidget3D::generateBuildingImages(int image_width, int image_height, bool 
 			int offset_x = 0;
 			int offset_y = 0;
 
-			for (int k = 0; k < 10; ++k) {
+			for (int k = 0; k < 1; ++k) {
 				std::vector<float> param_values;
 
 				renderManager.removeObjects();
@@ -540,7 +540,7 @@ void GLWidget3D::generateBuildingImages(int image_width, int image_height, bool 
 
 				cga::Grammar grammar;
 				cga::parseGrammar("../cga/building.xml", grammar);
-				param_values = system.randomParamValues(grammar);
+				//param_values = system.randomParamValues(grammar);
 				system.derive(grammar, true);
 				std::vector<boost::shared_ptr<glutils::Face> > faces;
 				system.generateGeometry(faces);
