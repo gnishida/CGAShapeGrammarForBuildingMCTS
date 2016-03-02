@@ -228,6 +228,10 @@ void GLWidget3D::drawScene() {
 }
 
 void GLWidget3D::render() {
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+	glMatrixMode(GL_MODELVIEW);
+
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	// PASS 1: Render to texture
 	glUseProgram(renderManager.programs["pass1"]);
@@ -388,7 +392,6 @@ void GLWidget3D::render() {
 		glDepthFunc(GL_LEQUAL);
 	}
 
-
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	// Blur
 
@@ -502,8 +505,8 @@ void GLWidget3D::generateBuildingImages(int image_width, int image_height, bool 
 
 	int origWidth = width();
 	int origHeight = height();
-	resize(512, 512);
-	resizeGL(512, 512);
+	//resize(512, 512);
+	//resizeGL(512, 512);
 
 	// fix camera view direction and position
 	camera.xrot = 0.0f;
@@ -526,7 +529,7 @@ void GLWidget3D::generateBuildingImages(int image_width, int image_height, bool 
 			int offset_x = 0;
 			int offset_y = 0;
 
-			for (int k = 0; k < 1; ++k) {
+			for (int k = 0; k < 10; ++k) {
 				std::vector<float> param_values;
 
 				renderManager.removeObjects();
@@ -537,7 +540,7 @@ void GLWidget3D::generateBuildingImages(int image_width, int image_height, bool 
 
 				cga::Grammar grammar;
 				cga::parseGrammar("../cga/building.xml", grammar);
-				//param_values = system.randomParamValues(grammar);
+				param_values = system.randomParamValues(grammar);
 				system.derive(grammar, true);
 				std::vector<boost::shared_ptr<glutils::Face> > faces;
 				system.generateGeometry(faces);
@@ -588,8 +591,8 @@ void GLWidget3D::generateBuildingImages(int image_width, int image_height, bool 
 		file.close();
 	}
 
-	resize(origWidth, origHeight);
-	resizeGL(origWidth, origHeight);
+	//resize(origWidth, origHeight);
+	//resizeGL(origWidth, origHeight);
 }
 
 /**
