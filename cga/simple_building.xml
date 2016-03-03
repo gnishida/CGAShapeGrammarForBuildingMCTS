@@ -6,7 +6,9 @@
 	<attr name="building_width" value="28" range="26,34"/>
 	<attr name="building_depth" value="20" range="16,24"/>
 	<attr name="building_height" value="20" range="10,30"/>
-
+	<attr name="gfloor_height" value="8" range="4,8"/>
+	<attr name="floor_height" value="5" range="3,5"/>
+	
 	<!-- building mass -->
 	<rule name="Start">
 		<translate mode="rel" coordSystem="world">
@@ -28,5 +30,20 @@
 		<extrude height="building_height"/>
 		<copy name="BuildingMass"/>
 	</rule>
+	<rule name="BuildingMass">
+		<comp>
+			<param name="front" value="FrontFacade"/>
+			<param name="side" value="Facade"/>
+			<param name="top" value="Roof"/>
+			<param name="bottom" value="Base."/>
+		</comp>
+	</rule>
 	
+	<!-- facade -->
+	<rule name="FrontFacade">
+		<split splitAxis="y">
+			<param type="floating" value="gfloor_height" name="GroundFloor"/>
+			<param type="floating" value="floor_height" name="Floor" repeat="true"/>
+		</split>
+	</rule>
 </grammar>

@@ -541,7 +541,15 @@ namespace mcts {
 				children.pop_front();
 
 				boost::shared_ptr<Nonterminal> child_nt = boost::shared_ptr<Nonterminal>(new Nonterminal(child, false));
-				queue.push_back(child_nt);
+
+				// Terminalなら、訪問済みマークをつけることで、clone()の際にキューに入らないようにする。
+				if (actions(child_nt, grammar).size() == 0) {
+					child_nt->visited = true;
+				}
+				// Non-terminalなら、キューに追加する
+				else {
+					queue.push_back(child_nt);
+				}
 				orig_nonterminal->children.push_back(child_nt);
 			}
 
