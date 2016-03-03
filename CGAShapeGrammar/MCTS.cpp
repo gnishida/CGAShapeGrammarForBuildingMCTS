@@ -215,6 +215,8 @@ namespace mcts {
 		boost::shared_ptr<MCTSTreeNode> node = boost::shared_ptr<MCTSTreeNode>(new MCTSTreeNode(state));
 
 		for (int iter = 0; iter < maxDerivationSteps; ++iter) {
+			std::cout << "iter: " << (iter + 1) << std::endl;
+
 			int best_action = mcts(node, maxMCTSIterations);
 
 			// 次のルートノードを作成
