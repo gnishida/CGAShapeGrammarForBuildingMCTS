@@ -8,7 +8,19 @@
 	<attr name="building_height" value="20" range="10,30"/>
 	<attr name="gfloor_height" value="8" range="4,8"/>
 	<attr name="floor_height" value="5" range="3,5"/>
-	
+	<attr name="corner_width" value="1" range="1,3"/>
+	<attr name="corner_height" value="0.5" range="0.5,0.8"/>
+	<attr name="floor_segment_width" value="10" range="5,20"/>
+	<attr name="ground_tile_width" value="5" range="2,8"/>
+	<attr name="tile_width" value="2" range="0.5,5"/>
+	<attr name="column_width" value="1" range="0,2"/>
+	<attr name="column_height" value="0.5" range="0,0.8"/>
+	<attr name="ground_tile_h_margin" value="0.5" range="0,1"/>
+	<attr name="ground_tile_t_margin" value="0.5" range="0,1"/>
+	<attr name="tile_h_margin" value="0.3" range="0,2"/>
+	<attr name="tile_b_margin" value="1" range="0,2"/>
+	<attr name="tile_t_margin" value="1" range="0,2"/>
+
 	<!-- building mass -->
 	<rule name="Start">
 		<translate mode="rel" coordSystem="world">
@@ -45,5 +57,90 @@
 			<param type="floating" value="gfloor_height" name="GroundFloor"/>
 			<param type="floating" value="floor_height" name="Floor" repeat="true"/>
 		</split>
+	</rule>
+	<rule name="Facade">
+		<split splitAxis="y">
+			<param type="floating" value="gfloor_height" name="GroundFloor"/>
+			<param type="floating" value="floor_height" name="Floor" repeat="true"/>
+		</split>
+	</rule>
+	
+	<!-- ground floor -->
+	<rule name="GroundFloor">
+		<split splitAxis="x">
+			<param type="absolute" value="corner_width" name="Corner"/>
+			<param type="absolute" value="floor_segment_width" name="GroundSegment" repeat="true"/>
+			<param type="absolute" value="corner_width" name="Corner"/>
+		</split>
+	</rule>
+	
+	<!-- floor -->
+	<rule name="Floor">
+		<split splitAxis="x">
+			<param type="absolute" value="corner_width" name="Corner"/>
+			<param type="absolute" value="floor_segment_width" name="Segment" repeat="true"/>
+			<param type="absolute" value="corner_width" name="Corner"/>
+		</split>
+	</rule>
+	<rule name="Corner">
+		<extrude height="corner_height"/>
+		<copy name="CornerVolume"/>
+	</rule>
+	
+	<rule name="GroundSegment">
+		<split splitAxis="x">
+			<param type="absolute" value="column_width" name="Column"/>
+			<param type="floating" value="ground_tile_width" name="GroundTile" repeat="true"/>
+			<param type="absolute" value="column_width" name="Column"/>
+		</split>
+	</rule>
+	<rule name="Segment">
+		<split splitAxis="x">
+			<param type="absolute" value="column_width" name="Column"/>
+			<param type="floating" value="tile_width" name="Tile" repeat="true"/>
+			<param type="absolute" value="column_width" name="Column"/>
+		</split>
+	</rule>
+	
+	<!-- tile -->
+	<rule name="Column">
+		<extrude height="column_height"/>
+		<copy name="ColumnVolume"/>
+	</rule>
+	<rule name="GroundTile">
+		<split splitAxis="x">
+			<param type="absolute" value="ground_tile_h_margin" name="Wall"/>
+			<param type="floating" value="1" name="GroundTile_Sub"/>
+			<param type="absolute" value="ground_tile_h_margin" name="Wall"/>
+		</split>
+	</rule>
+	<rule name="GroundTile_Sub">
+		<split splitAxis="y">
+			<param type="floating" value="1" name="GroundWindowTile"/>
+			<param type="absolute" value="ground_tile_t_margin" name="Wall"/>
+		</split>
+	</rule>
+	<rule name="Tile">
+		<split splitAxis="x">
+			<param type="absolute" value="tile_h_margin" name="Wall"/>
+			<param type="floating" value="1" name="Tile_Sub"/>
+			<param type="absolute" value="tile_h_margin" name="Wall"/>
+		</split>
+	</rule>
+	<rule name="Tile_Sub">
+		<split splitAxis="y">
+			<param type="absolute" value="tile_b_margin" name="Wall"/>
+			<param type="floating" value="1" name="WindowTile"/>
+			<param type="absolute" value="tile_t_margin" name="Wall"/>
+		</split>
+	</rule>
+
+	<!-- window -->
+	<rule name="GroundWindowTile">
+		<extrude height="-0.1"/>
+		<comp>
+			<param name="side" value="Wall"/>
+			<param name="top" value="GroundWindowTile_Sub"/>
+		</comp>
 	</rule>
 </grammar>

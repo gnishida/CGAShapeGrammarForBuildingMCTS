@@ -92,6 +92,7 @@
 	</rule>
 	<rule name="Corner">
 		<extrude height="corner_height"/>
+		<copy name="CornerVolume"/>
 	</rule>
 	
 	<rule name="GroundSegment">
@@ -112,6 +113,7 @@
 	<!-- tile -->
 	<rule name="Column">
 		<extrude height="column_height"/>
+		<copy name="ColumnVolume"/>
 	</rule>
 	<rule name="GroundTile">
 		<split splitAxis="x">
