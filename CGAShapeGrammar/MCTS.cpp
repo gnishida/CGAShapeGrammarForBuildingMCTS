@@ -17,7 +17,7 @@ namespace mcts {
 	const float SIMILARITY_METRICS_ALPHA = 1000.0f;
 	const float SIMILARITY_METRICS_BETA = 1000.0f;
 	const int BASE_PART = 3;
-	const int SIMULATION_DEPTH = 20;
+	const int SIMULATION_DEPTH = 100;
 
 	float time_select = 0.0f;
 	float time_expand = 0.0f;
@@ -215,8 +215,13 @@ namespace mcts {
 		boost::shared_ptr<MCTSTreeNode> node = boost::shared_ptr<MCTSTreeNode>(new MCTSTreeNode(state));
 
 		for (int iter = 0; iter < maxDerivationSteps; ++iter) {
-			node = mcts(node, maxMCTSIterations);
+			int best_action = mcts(node, maxMCTSIterations);
 
+			// 次のルートノードを作成
+			State child_state = node->state.clone();
+			child_state.applyAction(best_action);
+			node = boost::shared_ptr<MCTSTreeNode>(new MCTSTreeNode(child_state));
+			
 			////////////////////////////////////////////// DEBUG //////////////////////////////////////////////
 			QString filename = QString("results/result_%1.png").arg(iter);
 			QImage image;
@@ -239,6 +244,12 @@ namespace mcts {
 		std::cout << "Expand: " << time_expand << std::endl;
 		std::cout << "Simulate: " << time_simulate << std::endl;
 		std::cout << "Back: " << time_backpropagate << std::endl;
+
+		////////////////////////////////////////////// DEBUG //////////////////////////////////////////////
+		for (auto it = node->state.grammar.attrs.begin(); it != node->state.grammar.attrs.end(); ++it) {
+			std::cout << "param: " << it->first << " = " << it->second.value << std::endl;
+		}
+		////////////////////////////////////////////// DEBUG //////////////////////////////////////////////
 
 
 		return node->state;
@@ -265,7 +276,7 @@ namespace mcts {
 	 * @param maxMCTSIterations		MCTSアルゴリズムを何回走らせるか
 	 * @return						新しいstate
 	 */
-	boost::shared_ptr<MCTSTreeNode> MCTS::mcts(const boost::shared_ptr<MCTSTreeNode>& rootNode, int maxMCTSIterations) {
+	int MCTS::mcts(const boost::shared_ptr<MCTSTreeNode>& rootNode, int maxMCTSIterations) {
 		//boost::shared_ptr<MCTSTreeNode> rootNode = boost::shared_ptr<MCTSTreeNode>(new MCTSTreeNode(state));
 		for (int iter = 0; iter < maxMCTSIterations; ++iter) {
 			// MCTS selection
@@ -309,7 +320,7 @@ namespace mcts {
 		file.close();
 		////////////////////////////////////////////// DEBUG //////////////////////////////////////////////
 
-		return rootNode->bestChild();
+		return rootNode->bestChild()->selectedAction;
 	}
 
 	boost::shared_ptr<MCTSTreeNode> MCTS::select(const boost::shared_ptr<MCTSTreeNode>& rootNode) {
@@ -473,8 +484,8 @@ namespace mcts {
 			it->second.value = std::to_string((it->second.range_end - it->second.range_start) / 9 * (rand() % 10) + it->second.range_start);
 		}
 
-		//for (int iter = 0; iter < SIMULATION_DEPTH && !queue.empty(); ++iter) {
-		while (!queue.empty()) {
+		for (int iter = 0; iter < SIMULATION_DEPTH && !queue.empty(); ++iter) {
+		//while (!queue.empty()) {
 			boost::shared_ptr<Nonterminal> nonterminal = queue.front();
 			queue.pop_front();
 
