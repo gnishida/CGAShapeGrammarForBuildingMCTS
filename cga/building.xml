@@ -1,20 +1,20 @@
 <?xml version="1.0"?>
 <grammar version="1.0" author="Gen Nishida">
 	<!-- parameters -->
-	<attr name="building_x" value="-17" range="-17,-13"/>
-	<attr name="building_y" value="-11.11" range="-12,-8"/>
-	<attr name="building_width" value="29.5" range="26,34"/>
-	<attr name="building_depth" value="18.6" range="16,24"/>
-	<attr name="building_height" value="21.1" range="10,30"/>
-	<attr name="gfloor_height" value="5.77" range="4,8"/>
-	<attr name="floor_height" value="3.44" range="3,5"/>
-	<attr name="corner_width" value="2" range="0,3"/>
+	<attr name="building_x" value="-14" range="-17,-13"/>
+	<attr name="building_y" value="-10" range="-12,-8"/>
+	<attr name="building_width" value="28" range="26,34"/>
+	<attr name="building_depth" value="20" range="16,24"/>
+	<attr name="building_height" value="20" range="10,30"/>
+	<attr name="gfloor_height" value="8" range="4,8"/>
+	<attr name="floor_height" value="5" range="3,5"/>
+	<attr name="corner_width" value="1" range="0,3"/>
 	<attr name="corner_height" value="0.5" range="0,0.8"/>
-	<attr name="floor_segment_width" value="5" range="5,20"/>
+	<attr name="floor_segment_width" value="10" range="5,20"/>
 	<attr name="ground_tile_width" value="5" range="2,8"/>
-	<attr name="tile_width" value="5" range="0.5,5"/>
-	<attr name="column_width" value="1.33" range="0,2"/>
-	<attr name="column_height" value="0" range="0,0.8"/>
+	<attr name="tile_width" value="2" range="0.5,5"/>
+	<attr name="column_width" value="1" range="0,2"/>
+	<attr name="column_height" value="0.5" range="0,0.8"/>
 	<attr name="ground_tile_h_margin" value="0.5" range="0,1"/>
 	<attr name="ground_tile_t_margin" value="0.5" range="0,1"/>
 	<attr name="tile_h_margin" value="0.3" range="0,2"/>
