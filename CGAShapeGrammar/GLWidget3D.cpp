@@ -585,15 +585,15 @@ void GLWidget3D::runMCTS() {
 	camera.updateMVPMatrix();
 
 
-	//cv::Mat input = cv::imread("user_input.png");
-	cv::Mat input = cv::imread("user_input_simple.png");
+	cv::Mat input = cv::imread("user_input.png");
+	//cv::Mat input = cv::imread("user_input_simple.png");
 
 	cga::Grammar grammar;
-	//cga::parseGrammar("../cga/building.xml", grammar);
-	cga::parseGrammar("../cga/simple_building.xml", grammar);
+	cga::parseGrammar("../cga/building.xml", grammar);
+	//cga::parseGrammar("../cga/simple_building.xml", grammar);
 
 	mcts::MCTS mcts(input, this, grammar);
-	mcts.inverse(1000, 1);
+	mcts.inverse(2000, 1000);
 }
 
 /**

@@ -179,6 +179,7 @@
 	</rule>
 	<rule name="GroundWindowTile_Sub2_Top_Sub2">
 		<extrude height="-0.2"/>
+		<copy name="GroundWindowTile_Sub2_Top_Sub2_End"/>
 	</rule>
 	
 	<rule name="WindowTile">
@@ -208,6 +209,7 @@
 	</rule>
 	<rule name="WindowComponent_Sub">
 		<extrude height="-0.1"/>
+		<copy name="WindowComponent_Sub_End"/>
 	</rule>
 	
 	
