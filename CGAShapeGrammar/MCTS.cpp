@@ -17,7 +17,7 @@ namespace mcts {
 	const float SIMILARITY_METRICS_ALPHA = 1000.0f;
 	const float SIMILARITY_METRICS_BETA = 1000.0f;
 	const int BASE_PART = 3;
-	const int SIMULATION_DEPTH = 2;
+	const int SIMULATION_DEPTH = 20;
 
 	float time_select = 0.0f;
 	float time_expand = 0.0f;
@@ -193,7 +193,7 @@ namespace mcts {
 		cv::distanceTransform(grayImage, targetDistMap, CV_DIST_L2, 3);
 
 		////////////////////////////////////////////// DEBUG //////////////////////////////////////////////
-		cv::imwrite("results/targetDistMap.png", targetDistMap);
+		//cv::imwrite("results/targetDistMap.png", targetDistMap);
 		////////////////////////////////////////////// DEBUG //////////////////////////////////////////////
 
 		targetDistMap.convertTo(targetDistMap, CV_32F);
@@ -386,7 +386,7 @@ namespace mcts {
 		QImage image;
 		render(derivationTree.root, image);
 		////////////////////////////////////////////// DEBUG //////////////////////////////////////////////
-		image.save("results/output.png");
+		//image.save("results/output.png");
 		////////////////////////////////////////////// DEBUG //////////////////////////////////////////////
 
 		cv::Mat sourceImage(image.height(), image.width(), CV_8UC4, image.bits(), image.bytesPerLine());
@@ -398,7 +398,7 @@ namespace mcts {
 		cv::Mat distMap;
 		cv::distanceTransform(grayImage, distMap, CV_DIST_L2, 3);
 		////////////////////////////////////////////// DEBUG //////////////////////////////////////////////
-		cv::imwrite("results/distMap.png", distMap);
+		//cv::imwrite("results/distMap.png", distMap);
 		////////////////////////////////////////////// DEBUG //////////////////////////////////////////////
 		distMap.convertTo(distMap, CV_32F);
 
@@ -473,6 +473,7 @@ namespace mcts {
 			it->second.value = std::to_string((it->second.range_end - it->second.range_start) / 9 * (rand() % 10) + it->second.range_start);
 		}
 
+		//for (int iter = 0; iter < SIMULATION_DEPTH && !queue.empty(); ++iter) {
 		while (!queue.empty()) {
 			boost::shared_ptr<Nonterminal> nonterminal = queue.front();
 			queue.pop_front();

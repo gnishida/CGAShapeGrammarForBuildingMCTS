@@ -593,7 +593,7 @@ void GLWidget3D::runMCTS() {
 	//cga::parseGrammar("../cga/simple_building.xml", grammar);
 
 	mcts::MCTS mcts(input, this, grammar);
-	mcts.inverse(2000, 1000);
+	mcts.inverse(10, 20);
 }
 
 /**
