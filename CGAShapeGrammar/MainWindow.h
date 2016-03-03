@@ -24,10 +24,8 @@ public slots:
 	void onViewShadow();
 	void onViewRendering();
 	void onViewRefresh();
-	void onRotationStart();
-	void onRotationEnd();
 	void onGenerateBuildingImages();
-	void camera_update();
+	void onMCTS();
 };
 
 #endif // MAINWINDOW_H

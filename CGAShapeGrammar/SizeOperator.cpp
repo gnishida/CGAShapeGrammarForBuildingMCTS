@@ -1,6 +1,7 @@
 #include "SizeOperator.h"
 #include "CGA.h"
 #include "Shape.h"
+#include "Utils.h"
 
 namespace cga {
 
@@ -10,6 +11,16 @@ SizeOperator::SizeOperator(const Value& xSize, const Value& ySize, const Value& 
 	this->ySize = ySize;
 	this->zSize = zSize;
 	this->centered = centered;
+
+	if (!utils::isNumber(xSize.value)) {
+		this->params.push_back(xSize.value);
+	}
+	if (!utils::isNumber(ySize.value)) {
+		this->params.push_back(ySize.value);
+	}
+	if (!utils::isNumber(zSize.value)) {
+		this->params.push_back(zSize.value);
+	}
 }
 
 boost::shared_ptr<Shape> SizeOperator::apply(boost::shared_ptr<Shape>& shape, const Grammar& grammar, std::list<boost::shared_ptr<Shape> >& stack) {

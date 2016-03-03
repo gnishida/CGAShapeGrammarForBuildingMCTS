@@ -9,6 +9,8 @@
 #include <map>
 #include "Vertex.h"
 #include <QImage>
+#include "Shape.h"
+#include "Grammar.h"
 
 class GLWidget3D;
 class RenderManager;
@@ -17,17 +19,12 @@ namespace mcts {
 
 	class Nonterminal {
 	public:
-		std::string name;
-		int level;
-		int dist;
-		float segmentLength;
-		float segmentWidth;
-		float angle;
+		boost::shared_ptr<cga::Shape> shape;
+		bool visited;
 		std::vector<boost::shared_ptr<Nonterminal> > children;
-		bool terminal; // trueなら、ruleは適用しない。もう確定ということ。
 
 	public:
-		Nonterminal(const std::string& name, int level, int dist, float segmentLength, float angle = 0.0f, bool terminal = false);
+		Nonterminal(const boost::shared_ptr<cga::Shape>& shape, bool visited);
 		boost::shared_ptr<Nonterminal> clone();
 	};
 
@@ -45,10 +42,11 @@ namespace mcts {
 	public:
 		DerivationTree derivationTree;
 		std::list<boost::shared_ptr<Nonterminal> > queue;
+		cga::Grammar grammar;
 
 	public:
 		State();
-		State(const boost::shared_ptr<Nonterminal>& nonterminal);
+		State(const boost::shared_ptr<Nonterminal>& nonterminal, const cga::Grammar& grammar);
 		State clone() const;
 		bool applyAction(int action);
 	};
@@ -80,12 +78,13 @@ namespace mcts {
 		cv::Mat target;
 		cv::Mat targetDistMap;
 		GLWidget3D* glWidget;
+		cga::Grammar grammar;
 
 	public:
-		MCTS(const cv::Mat& target, GLWidget3D* glWidget);
+		MCTS(const cv::Mat& target, GLWidget3D* glWidget, cga::Grammar grammar);
 
 		State inverse(int maxDerivationSteps, int maxMCTSIterations);
-		void randomGeneration(RenderManager* renderManager);
+		//void randomGeneration(RenderManager* renderManager);
 		State mcts(const State& state, int maxMCTSIterations);
 		boost::shared_ptr<MCTSTreeNode> select(const boost::shared_ptr<MCTSTreeNode>& rootNode);
 		boost::shared_ptr<MCTSTreeNode> expand(const boost::shared_ptr<MCTSTreeNode>& leafNode);
@@ -93,12 +92,12 @@ namespace mcts {
 		void backpropage(const boost::shared_ptr<MCTSTreeNode>& childNode, float value);
 		float evaluate(const DerivationTree& derivationTree);
 		void render(const DerivationTree& derivationTree, QImage& image);
-		void generateGeometry(RenderManager* renderManager, const glm::mat4& modelMat, const boost::shared_ptr<Nonterminal>& node, std::vector<Vertex>& vertices);
+		void generateGeometry(RenderManager* renderManager, const glm::mat4& modelMat, const boost::shared_ptr<Nonterminal>& node, std::vector<boost::shared_ptr<glutils::Face> >& faces);
 	};
 
-	std::vector<int> actions(const boost::shared_ptr<Nonterminal>& nonterminal);
-	void randomDerivation(DerivationTree& derivationTree, std::list<boost::shared_ptr<Nonterminal> >& queue);
-	void applyRule(DerivationTree& derivationTree, const boost::shared_ptr<Nonterminal>& node, int action, std::list<boost::shared_ptr<Nonterminal> >& queue);
+	std::vector<int> actions(const boost::shared_ptr<Nonterminal>& nonterminal, const cga::Grammar& grammar);
+	void randomDerivation(DerivationTree& derivationTree, cga::Grammar& grammar, std::list<boost::shared_ptr<Nonterminal> >& queue);
+	void applyRule(boost::shared_ptr<Nonterminal>& nonterminal, int action, cga::Grammar& grammar, std::list<boost::shared_ptr<Nonterminal> >& queue);
 	float similarity(const cv::Mat& distMap, const cv::Mat& targetDistMap, float alpha, float beta);
 
 }

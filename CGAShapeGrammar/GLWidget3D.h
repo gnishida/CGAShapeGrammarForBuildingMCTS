@@ -24,17 +24,13 @@ public:
 	void render();
 	void loadCGA(char* filename);
 	void generateBuildingImages(int image_width, int image_height, bool grayscale);
+	void runMCTS();
 	void EDLine(const cv::Mat& source, cv::Mat& result, bool grayscale);
 	void draw2DPolyline(cv::Mat& img, const glm::vec2& p0, const glm::vec2& p1, int polyline_index);
 	bool isImageValid(const cv::Mat& image);
-	void rotationStart();
-	void rotationEnd();
 
 	void keyPressEvent(QKeyEvent* e);
 	void keyReleaseEvent(QKeyEvent* e);
-
-public slots:
-	void camera_update();
 
 protected:
 	void initializeGL();
@@ -61,6 +57,5 @@ public:
 	std::vector<std::vector<glm::vec2> > style_polylines;
 	std::vector<boost::shared_ptr<glutils::Face> > faces;
 
-	boost::shared_ptr<QTimer> rotationTimer;
 };
 

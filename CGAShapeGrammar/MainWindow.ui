@@ -45,15 +45,13 @@
     <addaction name="actionViewSketchyRendering"/>
     <addaction name="separator"/>
     <addaction name="actionViewRefresh"/>
-    <addaction name="separator"/>
-    <addaction name="actionRotationStart"/>
-    <addaction name="actionRotationEnd"/>
    </widget>
    <widget class="QMenu" name="menuTool">
     <property name="title">
      <string>Tool</string>
     </property>
     <addaction name="actionGenerateBuildingImages"/>
+    <addaction name="actionMCTS"/>
    </widget>
    <addaction name="menuFile"/>
    <addaction name="menuView"/>
@@ -203,6 +201,11 @@
    </property>
    <property name="shortcut">
     <string>Ctrl+S</string>
+   </property>
+  </action>
+  <action name="actionMCTS">
+   <property name="text">
+    <string>MCTS</string>
    </property>
   </action>
  </widget>

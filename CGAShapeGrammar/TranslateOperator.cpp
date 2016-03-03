@@ -1,6 +1,7 @@
 #include "TranslateOperator.h"
 #include "CGA.h"
 #include "Shape.h"
+#include "Utils.h"
 
 namespace cga {
 
@@ -11,6 +12,16 @@ TranslateOperator::TranslateOperator(int mode, int coordSystem, const Value& x, 
 	this->x = x;
 	this->y = y;
 	this->z = z;
+
+	if (!utils::isNumber(x.value)) {
+		this->params.push_back(x.value);
+	}
+	if (!utils::isNumber(y.value)) {
+		this->params.push_back(y.value);
+	}
+	if (!utils::isNumber(z.value)) {
+		this->params.push_back(z.value);
+	}
 }
 
 boost::shared_ptr<Shape> TranslateOperator::apply(boost::shared_ptr<Shape>& shape, const Grammar& grammar, std::list<boost::shared_ptr<Shape> >& stack) {

@@ -1,6 +1,7 @@
-#include "SplitOperator.h"
+﻿#include "SplitOperator.h"
 #include "CGA.h"
 #include "Shape.h"
+#include "Utils.h"
 
 namespace cga {
 
@@ -9,6 +10,22 @@ SplitOperator::SplitOperator(int splitAxis, const std::vector<Value>& sizes, con
 	this->splitAxis = splitAxis;
 	this->sizes = sizes;
 	this->output_names = output_names;
+
+	for (int i = 0; i < sizes.size(); ++i) {
+		if (!utils::isNumber(sizes[i].value)) {
+			bool duplicated = false;
+			
+			for (int k = 0; k < this->params.size(); ++k) {
+				if (this->params[k] == sizes[i].value) duplicated = true;
+			}
+
+			// 変数をリストに追加する。
+			// ただし、重複している場合は追加しない。
+			if (!duplicated) {
+				this->params.push_back(sizes[i].value);
+			}
+		}
+	}
 }
 
 boost::shared_ptr<Shape> SplitOperator::apply(boost::shared_ptr<Shape>& shape, const Grammar& grammar, std::list<boost::shared_ptr<Shape> >& stack) {

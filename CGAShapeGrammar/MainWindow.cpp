@@ -25,8 +25,7 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent) {
 	connect(ui.actionViewHatching, SIGNAL(triggered()), this, SLOT(onViewRendering()));
 	connect(ui.actionViewSketchyRendering, SIGNAL(triggered()), this, SLOT(onViewRendering()));
 	connect(ui.actionViewRefresh, SIGNAL(triggered()), this, SLOT(onViewRefresh()));
-	connect(ui.actionRotationStart, SIGNAL(triggered()), this, SLOT(onRotationStart()));
-	connect(ui.actionRotationEnd, SIGNAL(triggered()), this, SLOT(onRotationEnd()));
+	connect(ui.actionMCTS, SIGNAL(triggered()), this, SLOT(onMCTS()));
 
 	connect(ui.actionGenerateBuildingImages, SIGNAL(triggered()), this, SLOT(onGenerateBuildingImages()));
 
@@ -86,20 +85,10 @@ void MainWindow::onViewRefresh() {
 	}
 }
 
-void MainWindow::onRotationStart() {
-	glWidget->rotationStart();
-}
-
-void MainWindow::onRotationEnd() {
-	glWidget->rotationEnd();
-}
-
 void MainWindow::onGenerateBuildingImages() {
 	glWidget->generateBuildingImages(256, 256, true);
 }
 
-void MainWindow::camera_update() {
-	glWidget->camera.yrot += 0.02;
-	glWidget->camera.updateMVPMatrix();
-	glWidget->updateGL();
+void MainWindow::onMCTS() {
+	glWidget->runMCTS();
 }

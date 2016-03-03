@@ -1,0 +1,32 @@
+<?xml version="1.0"?>
+<grammar version="1.0" author="Gen Nishida">
+	<!-- parameters -->
+	<attr name="building_x" value="-14" range="-17,-13"/>
+	<attr name="building_y" value="-10" range="-12,-8"/>
+	<attr name="building_width" value="28" range="26,34"/>
+	<attr name="building_depth" value="20" range="16,24"/>
+	<attr name="building_height" value="20" range="10,30"/>
+
+	<!-- building mass -->
+	<rule name="Start">
+		<translate mode="rel" coordSystem="world">
+			<param name="x" type="absolute" value="building_x"/>
+			<param name="y" type="absolute" value="building_y"/>
+			<param name="z" type="absolute" value="0"/>
+		</translate>
+		<copy name="Start2"/>
+	</rule>
+	<rule name="Start2">
+		<size>
+			<param name="xSize" type="absolute" value="building_width"/>
+			<param name="ySize" type="absolute" value="building_depth"/>
+			<param name="zSize" type="absolute" value="0"/>
+		</size>
+		<copy name="Footprint"/>
+	</rule>
+	<rule name="Footprint">
+		<extrude height="building_height"/>
+		<copy name="BuildingMass"/>
+	</rule>
+	
+</grammar>

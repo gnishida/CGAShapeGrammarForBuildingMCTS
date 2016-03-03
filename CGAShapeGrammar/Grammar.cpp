@@ -11,6 +11,7 @@ Attribute::Attribute(const std::string& name, const std::string& value) {
 	this->name = name;
 	this->value = value;
 	this->hasRange = false;
+	fixed = true;
 }
 
 Attribute::Attribute(const std::string& name, const std::string& value, float range_start, float range_end) {
@@ -19,6 +20,7 @@ Attribute::Attribute(const std::string& name, const std::string& value, float ra
 	this->hasRange = true;
 	this->range_start = range_start;
 	this->range_end = range_end;
+	fixed = false;
 }
 
 

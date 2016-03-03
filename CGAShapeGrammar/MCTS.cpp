@@ -4,6 +4,7 @@
 #include <QDir>
 #include <QTextStream>
 #include <time.h>
+#include "Rectangle.h"
 
 namespace mcts {
 	const double PARAM_EXPLORATION = 1.0;
@@ -13,8 +14,8 @@ namespace mcts {
 	const float INITIAL_SEGMENT_WIDTH = 0.3f;
 	const int MAX_LEVEL = 3;
 	const int MAX_DIST = 20;
-	const float SIMILARITY_METRICS_ALPHA = 10000.0f;
-	const float SIMILARITY_METRICS_BETA = 5000.0f;
+	const float SIMILARITY_METRICS_ALPHA = 1000.0f;
+	const float SIMILARITY_METRICS_BETA = 1000.0f;
 	const int BASE_PART = 3;
 	const int SIMULATION_DEPTH = 2;
 
@@ -23,18 +24,13 @@ namespace mcts {
 	float time_simulate = 0.0f;
 	float time_backpropagate = 0.0f;
 
-	Nonterminal::Nonterminal(const std::string& name, int level, int dist, float segmentLength, float angle, bool terminal) {
-		this->name = name;
-		this->level = level;
-		this->dist = dist;
-		this->segmentLength = segmentLength;
-		this->segmentWidth = INITIAL_SEGMENT_WIDTH;
-		this->angle = angle;
-		this->terminal = terminal;
+	Nonterminal::Nonterminal(const boost::shared_ptr<cga::Shape>& shape, bool visited) {
+		this->shape = shape;
+		this->visited = visited;
 	}
 
 	boost::shared_ptr<Nonterminal> Nonterminal::clone() {
-		boost::shared_ptr<Nonterminal> newNonterminal = boost::shared_ptr<Nonterminal>(new Nonterminal(name, level, dist, segmentLength, angle, terminal));
+		boost::shared_ptr<Nonterminal> newNonterminal = boost::shared_ptr<Nonterminal>(new Nonterminal(shape->clone(shape->_name), visited));
 		for (int i = 0; i < children.size(); ++i) {
 			newNonterminal->children.push_back(children[i]->clone());
 		}
@@ -61,15 +57,17 @@ namespace mcts {
 	State::State() {
 	}
 
-	State::State(const boost::shared_ptr<Nonterminal>& root) {
+	State::State(const boost::shared_ptr<Nonterminal>& root, const cga::Grammar& grammar) {
 		derivationTree = DerivationTree(root);
 		this->queue.push_back(root);
+		this->grammar = grammar;
 	}
 
 	State State::clone() const {
 		// derivationTreeは、コピーコンストラクタにより、クローンを生成
 		State newState;
 		newState.derivationTree = derivationTree.clone();
+		newState.grammar = grammar;
 
 		std::list<boost::shared_ptr<Nonterminal> > queue;
 		queue.push_back(newState.derivationTree.root);
@@ -77,7 +75,7 @@ namespace mcts {
 			boost::shared_ptr<Nonterminal> node = queue.front();
 			queue.pop_front();
 
-			if (!node->terminal) {
+			if (!node->visited) {
 				newState.queue.push_back(node);
 			}
 
@@ -95,9 +93,10 @@ namespace mcts {
 		boost::shared_ptr<Nonterminal> node = queue.front();
 		queue.pop_front();
 
-		if (node->terminal) return false;
+		if (node->visited) return false;
 
-		applyRule(derivationTree, node, action, queue);
+		applyRule(node, action, grammar, queue);
+		node->visited = true;
 
 		return true;
 	}
@@ -113,33 +112,7 @@ namespace mcts {
 
 		if (!state.queue.empty()) {
 			// queueが空でない場合、先頭のnon-terminalに基づいて、unexpandedActionsを設定する
-			this->unexpandedActions = actions(state.queue.front());
-			/*
-			if (state.queue.front()->name == "X") {
-				if (state.queue.front()->dist >= MAX_DIST - 1) { //末端は、ストップ
-					this->unexpandedActions.push_back(0);
-				}
-				else if (state.queue.front()->dist < BASE_PART) { // 根元は、延伸のみ
-					this->unexpandedActions.push_back(1);
-				}
-				else { // 中間部分は、延伸または枝分かれ
-					this->unexpandedActions.push_back(1);
-					if (state.queue.front()->level < MAX_LEVEL - 1) {
-						this->unexpandedActions.push_back(2);
-					}
-				}
-			}
-			else if (state.queue.front()->name == "/") {
-				for (int i = 0; i < 5; ++i) {
-					this->unexpandedActions.push_back(i);
-				}
-			}
-			else if (state.queue.front()->name == "\\") {
-				for (int i = 0; i < 8; ++i) {
-					this->unexpandedActions.push_back(i);
-				}
-			}
-			*/
+			this->unexpandedActions = actions(state.queue.front(), this->state.grammar);
 		}
 	}
 
@@ -209,9 +182,10 @@ namespace mcts {
 		return action;
 	}
 
-	MCTS::MCTS(const cv::Mat& target, GLWidget3D* glWidget) {
+	MCTS::MCTS(const cv::Mat& target, GLWidget3D* glWidget, cga::Grammar grammar) {
 		this->target = target;
 		this->glWidget = glWidget;
+		this->grammar = grammar;
 
 		// compute a distance map
 		cv::Mat grayImage;
@@ -219,7 +193,7 @@ namespace mcts {
 		cv::distanceTransform(grayImage, targetDistMap, CV_DIST_L2, 3);
 
 		////////////////////////////////////////////// DEBUG //////////////////////////////////////////////
-		//cv::imwrite("targetDistMap.png", targetDistMap);
+		cv::imwrite("results/targetDistMap.png", targetDistMap);
 		////////////////////////////////////////////// DEBUG //////////////////////////////////////////////
 
 		targetDistMap.convertTo(targetDistMap, CV_32F);
@@ -232,25 +206,24 @@ namespace mcts {
 		time_simulate = 0.0f;
 		time_backpropagate = 0.0f;
 
-		if (QDir("results").exists()) {
-			QDir("results").removeRecursively();
+		if (!QDir("results").exists()) {
+			QDir().mkpath("results");
 		}
 
-		State state(boost::shared_ptr<Nonterminal>(new Nonterminal("X", 0, 0, INITIAL_SEGMENT_LENGTH)));
+		boost::shared_ptr<cga::Shape> start = boost::shared_ptr<cga::Shape>(new cga::Rectangle("Start", "", glm::translate(glm::rotate(glm::mat4(), -3.141592f * 0.5f, glm::vec3(1, 0, 0)), glm::vec3(-0.5, -0.5, 0)), glm::mat4(), 1, 1, glm::vec3(1, 1, 1)));
+		State state(boost::shared_ptr<Nonterminal>(new Nonterminal(start, false)), grammar);
 
 		for (int iter = 0; iter < maxDerivationSteps; ++iter) {
 			state = mcts(state, maxMCTSIterations);
 
 			////////////////////////////////////////////// DEBUG //////////////////////////////////////////////
-			if (!QDir("results/").exists())	QDir().mkpath("results/");
-
 			QString filename = QString("results/result_%1.png").arg(iter);
 			QImage image;
 			render(state.derivationTree, image);
 			cv::Mat backMat = target.clone();
 			QImage background(backMat.data, backMat.cols, backMat.rows, backMat.step, QImage::Format_RGB888);
 			QPainter painter(&background);
-			painter.setOpacity(0.5);
+			painter.setOpacity(0.8);
 			painter.drawImage(0, 0, image);
 			background.save(filename);
 			////////////////////////////////////////////// DEBUG //////////////////////////////////////////////
@@ -269,8 +242,9 @@ namespace mcts {
 		return state;
 	}
 
+#if 0
 	void MCTS::randomGeneration(RenderManager* renderManager) {
-		State state(boost::shared_ptr<Nonterminal>(new Nonterminal("X", 0, 0, INITIAL_SEGMENT_LENGTH)));
+		State state(boost::shared_ptr<cga::Shape>(new cga::Rectangle("X", 0, 0, INITIAL_SEGMENT_LENGTH)));
 		randomDerivation(state.derivationTree, state.queue);
 
 		glWidget->renderManager.removeObjects();
@@ -278,7 +252,17 @@ namespace mcts {
 		generateGeometry(renderManager, glm::mat4(), state.derivationTree.root, vertices);
 		glWidget->renderManager.addObject("tree", "", vertices, true);
 	}
+#endif
 
+	/**
+	 * 現在のstateをルートノードとしてsearch treeを生成し、
+	 * MCTSアルゴリズムによりbest actionを探し、
+	 * 現在のstateに反映して新しいstateを返却する。
+	 *
+	 * @param state					現在のstate
+	 * @param maxMCTSIterations		MCTSアルゴリズムを何回走らせるか
+	 * @return						新しいstate
+	 */
 	State MCTS::mcts(const State& state, int maxMCTSIterations) {
 		boost::shared_ptr<MCTSTreeNode> rootNode = boost::shared_ptr<MCTSTreeNode>(new MCTSTreeNode(state));
 		for (int iter = 0; iter < maxMCTSIterations; ++iter) {
@@ -364,7 +348,7 @@ namespace mcts {
 	
 	float MCTS::simulate(const boost::shared_ptr<MCTSTreeNode>& childNode) {
 		State state = childNode->state.clone();
-		randomDerivation(state.derivationTree, state.queue);
+		randomDerivation(state.derivationTree, state.grammar, state.queue);
 		return evaluate(state.derivationTree);
 	}
 
@@ -400,7 +384,7 @@ namespace mcts {
 		QImage image;
 		render(derivationTree.root, image);
 		////////////////////////////////////////////// DEBUG //////////////////////////////////////////////
-		//image.save("output.png");
+		image.save("results/output.png");
 		////////////////////////////////////////////// DEBUG //////////////////////////////////////////////
 
 		cv::Mat sourceImage(image.height(), image.width(), CV_8UC4, image.bits(), image.bytesPerLine());
@@ -412,7 +396,7 @@ namespace mcts {
 		cv::Mat distMap;
 		cv::distanceTransform(grayImage, distMap, CV_DIST_L2, 3);
 		////////////////////////////////////////////// DEBUG //////////////////////////////////////////////
-		//cv::imwrite("distMap.png", distMap);
+		cv::imwrite("results/distMap.png", distMap);
 		////////////////////////////////////////////// DEBUG //////////////////////////////////////////////
 		distMap.convertTo(distMap, CV_32F);
 
@@ -422,141 +406,144 @@ namespace mcts {
 
 	void MCTS::render(const DerivationTree& derivationTree, QImage& image) {
 		glWidget->renderManager.removeObjects();
-		std::vector<Vertex> vertices;
-		generateGeometry(&glWidget->renderManager, glm::mat4(), derivationTree.root, vertices);
-		glWidget->renderManager.addObject("tree", "", vertices, true);
+		std::vector<boost::shared_ptr<glutils::Face> > faces;
+		generateGeometry(&glWidget->renderManager, glm::mat4(), derivationTree.root, faces);
+		glWidget->renderManager.addFaces(faces);
+		glWidget->renderManager.renderingMode = RenderManager::RENDERING_MODE_LINE;
 		glWidget->render();
 		
 		image = glWidget->grabFrameBuffer();
 	}
 
-	void MCTS::generateGeometry(RenderManager* renderManager, const glm::mat4& modelMat, const boost::shared_ptr<Nonterminal>& node, std::vector<Vertex>& vertices) {
+	void MCTS::generateGeometry(RenderManager* renderManager, const glm::mat4& modelMat, const boost::shared_ptr<Nonterminal>& node, std::vector<boost::shared_ptr<glutils::Face> >& faces) {
 		glm::mat4 mat;
 
-		if (node->name == "F") {
-			glutils::drawQuad(node->segmentWidth, node->segmentLength, glm::vec4(0, 0, 0, 1), glm::translate(modelMat, glm::vec3(0, node->segmentLength * 0.5, 0)), vertices);
-			mat = glm::translate(modelMat, glm::vec3(0, node->segmentLength, 0));
+		if (node->children.size() == 0) {
+			node->shape->generateGeometry(faces, 1.0f);
 		}
-		else if (node->name == "X") {
-			glutils::drawQuad(node->segmentWidth, node->segmentLength, glm::vec4(0.5, 0.5, 0.5, 1), glm::translate(modelMat, glm::vec3(0, node->segmentLength * 0.5, 0)), vertices);
-			mat = glm::translate(modelMat, glm::vec3(0, node->segmentLength, 0));
-		}
-		else if (node->name == "/") {
-			if (!node->terminal) return;
-			mat = glm::rotate(modelMat, node->angle / 180.0f * M_PI, glm::vec3(0, 0, 1));
-		}
-		else if (node->name == "\\") {
-			if (!node->terminal) return;
-			mat = glm::rotate(modelMat, node->angle / 180.0f * M_PI, glm::vec3(0, 0, 1));
-		}
-		
-		for (int i = 0; i < node->children.size(); ++i) {
-			generateGeometry(renderManager, mat, node->children[i], vertices);
+		else {
+			for (int i = 0; i < node->children.size(); ++i) {
+				generateGeometry(renderManager, mat, node->children[i], faces);
+			}
 		}
 	}
 
-	std::vector<int> actions(const boost::shared_ptr<Nonterminal>& nonterminal) {
+	std::vector<int> actions(const boost::shared_ptr<Nonterminal>& nonterminal, const cga::Grammar& grammar) {
 		std::vector<int> ret;
+		
+		if (grammar.rules.find(nonterminal->shape->_name) == grammar.rules.end()) {
+			return ret;
+		}
 
-		if (nonterminal->terminal) return ret;
-
-		if (nonterminal->name == "X") {
-			if (nonterminal->dist >= MAX_DIST - 1) {
-				ret.push_back(0);
-			}
-			else if (nonterminal->dist < BASE_PART) {
-				ret.push_back(1);
-			}
-			else {
-				ret.push_back(1);
-				if (nonterminal->level < MAX_LEVEL - 1) {
-					ret.push_back(2);
+		int num_options = 1;
+		for (int i = 0; i < grammar.rules.at(nonterminal->shape->_name).operators.size(); ++i) {
+			for (int j = 0; j < grammar.rules.at(nonterminal->shape->_name).operators[i]->params.size(); ++j) {
+				if (grammar.attrs.find(grammar.rules.at(nonterminal->shape->_name).operators[i]->params[j]) != grammar.attrs.end()) {
+					if (!grammar.attrs.at(grammar.rules.at(nonterminal->shape->_name).operators[i]->params[j]).fixed) {
+						num_options *= 10;
+					}
 				}
 			}
 		}
-		else if (nonterminal->name == "/") {
-			for (int i = 0; i < 5; ++i) {
-				ret.push_back(i);
-			}
+				
+		for (int i = 0; i < num_options; ++i) {
+			ret.push_back(i);
 		}
-		else if (nonterminal->name == "\\") {
-			for (int i = 0; i < 8; ++i) {
-				ret.push_back(i);
-			}
-		}
-
+		
 		return ret;
 	}
 
-	void randomDerivation(DerivationTree& derivationTree, std::list<boost::shared_ptr<Nonterminal> >& queue) {
-		int start_depth = queue.front()->dist;
+	/**
+	 * 指定されたderivation treeに対して、derivationを最後まで実行する。
+	 * grammarおよびqueueは変更される。
+	 * derivationTreeは使わないが、間接的に木構造は更新される。
+	 *
+	 * @param derivationTree	derivation tree
+	 * @param grammar			grammar
+	 * @param queue				queue for derivation
+	 */
+	void randomDerivation(DerivationTree& derivationTree, cga::Grammar& grammar, std::list<boost::shared_ptr<Nonterminal> >& queue) {
+		// 未決定のパラメータについて、適当に数値を割り当てる
+		for (auto it = grammar.attrs.begin(); it != grammar.attrs.end(); ++it) {
+			if (it->second.fixed) continue;
+			if (!it->second.hasRange) continue;
+
+			it->second.value = std::to_string((it->second.range_end - it->second.range_start) / 9 * (rand() % 10) + it->second.range_start);
+		}
 
 		while (!queue.empty()) {
-			boost::shared_ptr<Nonterminal> node = queue.front();
+			boost::shared_ptr<Nonterminal> nonterminal = queue.front();
 			queue.pop_front();
 
-			if (node->terminal) continue;
+			if (grammar.rules.find(nonterminal->shape->_name) == grammar.rules.end()) continue;
 
-			// simulation depth以上ならシミュレーションを終了
-			if (SIMULATION_DEPTH > 0 && node->dist >= start_depth + SIMULATION_DEPTH) continue;
+			boost::shared_ptr<cga::Shape> shape = nonterminal->shape;
+			std::list<boost::shared_ptr<cga::Shape> > stack;
 
-			std::vector<int> act = actions(node);
-			if (act.size() > 0) {
-				int action = act[rand() % act.size()];
-				applyRule(derivationTree, node, action, queue);
-			}
-			else {
-				int z = 0;
+			for (int i = 0; i < grammar.rules[nonterminal->shape->_name].operators.size(); ++i) {
+				shape = grammar.rules[nonterminal->shape->_name].operators[i]->apply(shape, grammar, stack);
+
+				while (!stack.empty()) {
+					boost::shared_ptr<cga::Shape> child = stack.front();
+					stack.pop_front();
+
+					boost::shared_ptr<Nonterminal> child_nt = boost::shared_ptr<Nonterminal>(new Nonterminal(child, false));
+					queue.push_back(child_nt);
+					nonterminal->children.push_back(child_nt);
+				}
+
+				if (shape == NULL) break;
 			}
 		}
 	}
 
-	void applyRule(DerivationTree& derivationTree, const boost::shared_ptr<Nonterminal>& node, int action, std::list<boost::shared_ptr<Nonterminal> >& queue) {
-		if (node->name == "X") {
-			if (action == 0) {
-				node->name = "F";
-				node->terminal = true;
-			}
-			else if (action == 1) {
-				node->name = "F";
-				node->terminal = true;
+	/**
+	 * 指定されたnon-terminalに、指定されたactionを適用する。
+	 * 適用後に生成されるnon-terminalを、元のnon-terminalの子ノードとして登録するとともに、
+	 * キューにも格納する。
+	 */
+	void applyRule(boost::shared_ptr<Nonterminal>& nonterminal, int action, cga::Grammar& grammar, std::list<boost::shared_ptr<Nonterminal> >& queue) {
+		boost::shared_ptr<Nonterminal> orig_nonterminal = nonterminal;
+		nonterminal->visited = true;
 
-				boost::shared_ptr<Nonterminal> child = boost::shared_ptr<Nonterminal>(new Nonterminal("/", node->level, node->dist + 1, node->segmentLength));
-				node->children.push_back(child);
-				queue.push_back(child);
+		boost::shared_ptr<cga::Shape> shape = nonterminal->shape;
 
-				boost::shared_ptr<Nonterminal> grandchild = boost::shared_ptr<Nonterminal>(new Nonterminal("X", node->level, node->dist + 1, INITIAL_SEGMENT_LENGTH));
-				child->children.push_back(grandchild);
-				queue.push_back(grandchild);
-			}
-			else if (action == 2) {
-				node->name = "F";
-				node->terminal = true;
-
-				boost::shared_ptr<Nonterminal> child1 = boost::shared_ptr<Nonterminal>(new Nonterminal("/", node->level, node->dist + 1, node->segmentLength));
-				node->children.push_back(child1);
-				queue.push_back(child1);
-
-				boost::shared_ptr<Nonterminal> grandchild1 = boost::shared_ptr<Nonterminal>(new Nonterminal("X", node->level, node->dist + 1, INITIAL_SEGMENT_LENGTH));
-				child1->children.push_back(grandchild1);
-				queue.push_back(grandchild1);
-
-				boost::shared_ptr<Nonterminal> child2 = boost::shared_ptr<Nonterminal>(new Nonterminal("\\", node->level + 1, node->dist + 1, node->segmentLength));
-				node->children.push_back(child2);
-				queue.push_back(child2);
-
-				boost::shared_ptr<Nonterminal> grandchild2 = boost::shared_ptr<Nonterminal>(new Nonterminal("X", node->level + 1, node->dist + 1, INITIAL_SEGMENT_LENGTH));
-				child2->children.push_back(grandchild2);
-				queue.push_back(grandchild2);
-			}
+		if (grammar.rules.find(shape->_name) == grammar.rules.end()) {
+			return;
 		}
-		else if (node->name == "/") {
-			node->angle = action * 10 - 20;
-			node->terminal = true;
-		}
-		else if (node->name == "\\") {
-			node->angle = action < 4 ? action * 20 - 90 : action * 20 - 50;
-			node->terminal = true;
+
+		for (int i = 0; i < grammar.rules[shape->_name].operators.size(); ++i) {
+			std::list<boost::shared_ptr<cga::Shape> > children;
+
+			if (grammar.rules[shape->_name].operators[i]->params.size() == 0) {
+				shape = grammar.rules[shape->_name].operators[i]->apply(shape, grammar, children);
+			}
+			else {
+				for (int j = 0; j < grammar.rules[shape->_name].operators[i]->params.size(); ++j) {
+					std::string param_name = grammar.rules[shape->_name].operators[i]->params[j];
+					if (!grammar.attrs[param_name].fixed) {
+						int a = action % 10;
+						action = (action - a) / 10;
+						float range = grammar.attrs[param_name].range_end - grammar.attrs[param_name].range_start;
+						grammar.attrs[param_name].value = std::to_string(range / 9 * a + grammar.attrs[param_name].range_start);
+						grammar.attrs[param_name].fixed = true;
+					}
+				}
+
+				shape = grammar.rules[shape->_name].operators[i]->apply(shape, grammar, children);
+			}
+
+			// 子ノードを追加する
+			while (!children.empty()) {
+				boost::shared_ptr<cga::Shape> child = children.front();
+				children.pop_front();
+
+				boost::shared_ptr<Nonterminal> child_nt = boost::shared_ptr<Nonterminal>(new Nonterminal(child, false));
+				queue.push_back(child_nt);
+				orig_nonterminal->children.push_back(child_nt);
+			}
+
+			if (shape == NULL) break;
 		}
 	}
 

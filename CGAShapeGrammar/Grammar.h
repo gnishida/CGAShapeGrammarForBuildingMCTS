@@ -18,9 +18,10 @@ public:
 	bool hasRange;
 	float range_start;
 	float range_end;
+	bool fixed;
 
 public:
-	Attribute() {}
+	Attribute() : fixed(false) {}
 	Attribute(const std::string& name, const std::string& value);
 	Attribute(const std::string& name, const std::string& value, float range_start, float range_end);
 };
@@ -44,6 +45,7 @@ public:
 class Operator {
 public:
 	std::string name;
+	std::vector<std::string> params;
 
 public:
 	Operator() {}
@@ -64,7 +66,7 @@ public:
 
 class Grammar {
 public:
-	std::string type;
+	//std::string type;
 	std::map<std::string, Attribute> attrs;
 	std::map<std::string, cga::Rule> rules;
 

@@ -15,6 +15,7 @@
 #include <iostream>
 #include "EDLinesLib.h"
 #include <QProcess>
+#include "MCTS.h"
 
 GLWidget3D::GLWidget3D(MainWindow *parent) : QGLWidget(QGLFormat(QGL::SampleBuffers)) {
 	this->mainWin = parent;
@@ -189,6 +190,11 @@ void GLWidget3D::initializeGL() {
 	renderManager.resize(this->width(), this->height());
 
 	glUniform1i(glGetUniformLocation(renderManager.programs["ssao"], "tex0"), 0);//tex0: 0
+
+	camera.xrot = 0.0f;
+	camera.yrot = -40.0f;
+	camera.zrot = 0.0f;
+	camera.pos = glm::vec3(0, 10, 50);
 
 	system.modelMat = glm::rotate(glm::mat4(), -3.1415926f * 0.5f, glm::vec3(1, 0, 0));
 }
@@ -453,19 +459,8 @@ void GLWidget3D::render() {
 void GLWidget3D::loadCGA(char* filename) {
 	renderManager.removeObjects();
 
-	float offset_x = 0.0f;
-	float offset_y = 0.0f;
-
-#if 1
-	{ // for building Paris
-		float object_width = 28.0f;
-		float object_depth = 20.0f;
-
-		cga::Rectangle* start = new cga::Rectangle("Start", "", glm::translate(glm::rotate(glm::mat4(), -3.141592f * 0.5f, glm::vec3(1, 0, 0)), glm::vec3(offset_x - (float)object_width*0.5f, offset_y - (float)object_depth*0.5f, 0)), glm::mat4(), object_width, object_depth, glm::vec3(1, 1, 1));
-
-		system.stack.push_back(boost::shared_ptr<cga::Shape>(start));
-	}
-#endif
+	cga::Rectangle* start = new cga::Rectangle("Start", "", glm::translate(glm::rotate(glm::mat4(), -3.141592f * 0.5f, glm::vec3(1, 0, 0)), glm::vec3(-0.5, -0.5, 0)), glm::mat4(), 1, 1, glm::vec3(1, 1, 1));
+	system.stack.push_back(boost::shared_ptr<cga::Shape>(start));
 	
 	try {
 		cga::Grammar grammar;
@@ -512,7 +507,7 @@ void GLWidget3D::generateBuildingImages(int image_width, int image_height, bool 
 	camera.xrot = 0.0f;
 	camera.yrot = -40.0f;
 	camera.zrot = 0.0f;
-	camera.pos = glm::vec3(0, 15, 80);
+	camera.pos = glm::vec3(0, 10, 50);
 	camera.updateMVPMatrix();
 
 	QFile file(resultDir + "parameters.txt");
@@ -524,75 +519,81 @@ void GLWidget3D::generateBuildingImages(int image_width, int image_height, bool 
 	QTextStream out(&file);
 
 	int count = 0;
-	for (int object_width = 28; object_width <= 28; object_width += 1) {
-		for (int object_depth = 20; object_depth <= 20; object_depth += 1) {
-			int offset_x = 0;
-			int offset_y = 0;
+	for (int k = 0; k < 1; ++k) {
+		std::vector<float> param_values;
 
-			for (int k = 0; k < 1; ++k) {
-				std::vector<float> param_values;
+		renderManager.removeObjects();
 
-				renderManager.removeObjects();
+		// generate a building
+		cga::Rectangle* start = new cga::Rectangle("Start", "", glm::translate(glm::rotate(glm::mat4(), -3.141592f * 0.5f, glm::vec3(1, 0, 0)), glm::vec3(-0.5, -0.5, 0)), glm::mat4(), 1, 1, glm::vec3(1, 1, 1));
+		system.stack.push_back(boost::shared_ptr<cga::Shape>(start));
 
-				// generate a building
-				cga::Rectangle* start = new cga::Rectangle("Start", "", glm::translate(glm::rotate(glm::mat4(), -3.141592f * 0.5f, glm::vec3(1, 0, 0)), glm::vec3(offset_x - (float)object_width*0.5f, offset_y - (float)object_depth*0.5f, 0)), glm::mat4(), object_width, object_depth, glm::vec3(1, 1, 1));
-				system.stack.push_back(boost::shared_ptr<cga::Shape>(start));
+		cga::Grammar grammar;
+		cga::parseGrammar("../cga/simple_building.xml", grammar);
+		//param_values = system.randomParamValues(grammar);
+		system.derive(grammar, true);
+		std::vector<boost::shared_ptr<glutils::Face> > faces;
+		system.generateGeometry(faces);
+		renderManager.addFaces(faces);
 
-				cga::Grammar grammar;
-				cga::parseGrammar("../cga/building.xml", grammar);
-				//param_values = system.randomParamValues(grammar);
-				system.derive(grammar, true);
-				std::vector<boost::shared_ptr<glutils::Face> > faces;
-				system.generateGeometry(faces);
-				renderManager.addFaces(faces);
+		renderManager.updateShadowMap(this, light_dir, light_mvpMatrix);
 
-				renderManager.updateShadowMap(this, light_dir, light_mvpMatrix);
+		// render a building
+		/*glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+		glEnable(GL_DEPTH_TEST);
+		glDisable(GL_TEXTURE_2D);*/
+		render();
 
-				// render a building
-				/*glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-				glEnable(GL_DEPTH_TEST);
-				glDisable(GL_TEXTURE_2D);*/
-				render();
+		QImage img = this->grabFrameBuffer();
+		cv::Mat mat = cv::Mat(img.height(), img.width(), CV_8UC4, img.bits(), img.bytesPerLine()).clone();
 
-				QImage img = this->grabFrameBuffer();
-				cv::Mat mat = cv::Mat(img.height(), img.width(), CV_8UC4, img.bits(), img.bytesPerLine()).clone();
+		// 画像を縮小
+		/*cv::resize(mat, mat, cv::Size(256, 256));
+		cv::threshold(mat, mat, 250, 255, CV_THRESH_BINARY);
+		cv::resize(mat, mat, cv::Size(image_width, image_height));
+		cv::threshold(mat, mat, 250, 255, CV_THRESH_BINARY);
+		*/
 
-				// 画像を縮小
-				/*cv::resize(mat, mat, cv::Size(256, 256));
-				cv::threshold(mat, mat, 250, 255, CV_THRESH_BINARY);
-				cv::resize(mat, mat, cv::Size(image_width, image_height));
-				cv::threshold(mat, mat, 250, 255, CV_THRESH_BINARY);
-				*/
+		// set filename
+		QString filename = resultDir + "/" + QString("image_%1.png").arg(count, 6, 10, QChar('0'));
+		cv::imwrite(filename.toUtf8().constData(), mat);
 
-				// put depth, width at the begining of the param values array
-				param_values.insert(param_values.begin() + 0, offset_x);
-				param_values.insert(param_values.begin() + 1, offset_y);
-				param_values.insert(param_values.begin() + 2, object_width);
-				param_values.insert(param_values.begin() + 3, object_depth);
-
-				// set filename
-				QString filename = resultDir + "/" + QString("image_%1.png").arg(count, 6, 10, QChar('0'));
-				cv::imwrite(filename.toUtf8().constData(), mat);
-
-				// write all the param values to the file
-				for (int pi = 0; pi < param_values.size(); ++pi) {
-					if (pi > 0) {
-						out << ",";
-					}
-					out << param_values[pi];
-				}
-				out << "\n";
-
-				count++;
+		// write all the param values to the file
+		for (int pi = 0; pi < param_values.size(); ++pi) {
+			if (pi > 0) {
+				out << ",";
 			}
-
+			out << param_values[pi];
 		}
+		out << "\n";
 
-		file.close();
+		count++;
 	}
+
+	file.close();
 
 	//resize(origWidth, origHeight);
 	//resizeGL(origWidth, origHeight);
+}
+
+void GLWidget3D::runMCTS() {
+	// fix camera view direction and position
+	camera.xrot = 0.0f;
+	camera.yrot = -40.0f;
+	camera.zrot = 0.0f;
+	camera.pos = glm::vec3(0, 10, 50);
+	camera.updateMVPMatrix();
+
+
+	//cv::Mat input = cv::imread("user_input.png");
+	cv::Mat input = cv::imread("user_input_simple.png");
+
+	cga::Grammar grammar;
+	//cga::parseGrammar("../cga/building.xml", grammar);
+	cga::parseGrammar("../cga/simple_building.xml", grammar);
+
+	mcts::MCTS mcts(input, this, grammar);
+	mcts.inverse(10, 100);
 }
 
 /**
@@ -746,22 +747,6 @@ bool GLWidget3D::isImageValid(const cv::Mat& image) {
 		if (tmp.at<cv::Vec3b>(0, 0)[0] == 0) return true;
 		else return false;
 	}
-}
-
-void GLWidget3D::rotationStart() {
-	camera.xrot = 0;
-	camera.yrot = -90;
-	camera.zrot = 0;
-	camera.pos = glm::vec3(0, 10, 60);
-	updateGL();
-
-	rotationTimer = boost::shared_ptr<QTimer>(new QTimer(this));
-	connect(rotationTimer.get(), SIGNAL(timeout()), mainWin, SLOT(camera_update()));
-	rotationTimer->start(20);
-}
-
-void GLWidget3D::rotationEnd() {
-	rotationTimer->stop();
 }
 
 void GLWidget3D::keyPressEvent(QKeyEvent *e) {
