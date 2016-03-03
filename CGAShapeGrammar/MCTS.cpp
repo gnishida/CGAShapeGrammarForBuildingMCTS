@@ -212,14 +212,15 @@ namespace mcts {
 
 		boost::shared_ptr<cga::Shape> start = boost::shared_ptr<cga::Shape>(new cga::Rectangle("Start", "", glm::translate(glm::rotate(glm::mat4(), -3.141592f * 0.5f, glm::vec3(1, 0, 0)), glm::vec3(-0.5, -0.5, 0)), glm::mat4(), 1, 1, glm::vec3(1, 1, 1)));
 		State state(boost::shared_ptr<Nonterminal>(new Nonterminal(start, false)), grammar);
+		boost::shared_ptr<MCTSTreeNode> node = boost::shared_ptr<MCTSTreeNode>(new MCTSTreeNode(state));
 
 		for (int iter = 0; iter < maxDerivationSteps; ++iter) {
-			state = mcts(state, maxMCTSIterations);
+			node = mcts(node, maxMCTSIterations);
 
 			////////////////////////////////////////////// DEBUG //////////////////////////////////////////////
 			QString filename = QString("results/result_%1.png").arg(iter);
 			QImage image;
-			render(state.derivationTree, image);
+			render(node->state.derivationTree, image);
 			cv::Mat backMat = target.clone();
 			QImage background(backMat.data, backMat.cols, backMat.rows, backMat.step, QImage::Format_RGB888);
 			QPainter painter(&background);
@@ -229,7 +230,8 @@ namespace mcts {
 			////////////////////////////////////////////// DEBUG //////////////////////////////////////////////
 
 			// これ以上derivationできない場合は、終了
-			if (state.queue.empty()) break;
+			if (node->state.queue.empty()) break;
+			if (node->unexpandedActions.size() == 0) break;
 		}
 
 		// show compuattion time
@@ -239,7 +241,7 @@ namespace mcts {
 		std::cout << "Back: " << time_backpropagate << std::endl;
 
 
-		return state;
+		return node->state;
 	}
 
 #if 0
@@ -263,8 +265,8 @@ namespace mcts {
 	 * @param maxMCTSIterations		MCTSアルゴリズムを何回走らせるか
 	 * @return						新しいstate
 	 */
-	State MCTS::mcts(const State& state, int maxMCTSIterations) {
-		boost::shared_ptr<MCTSTreeNode> rootNode = boost::shared_ptr<MCTSTreeNode>(new MCTSTreeNode(state));
+	boost::shared_ptr<MCTSTreeNode> MCTS::mcts(const boost::shared_ptr<MCTSTreeNode>& rootNode, int maxMCTSIterations) {
+		//boost::shared_ptr<MCTSTreeNode> rootNode = boost::shared_ptr<MCTSTreeNode>(new MCTSTreeNode(state));
 		for (int iter = 0; iter < maxMCTSIterations; ++iter) {
 			// MCTS selection
 			time_t start = clock();
@@ -307,7 +309,7 @@ namespace mcts {
 		file.close();
 		////////////////////////////////////////////// DEBUG //////////////////////////////////////////////
 
-		return rootNode->bestChild()->state;
+		return rootNode->bestChild();
 	}
 
 	boost::shared_ptr<MCTSTreeNode> MCTS::select(const boost::shared_ptr<MCTSTreeNode>& rootNode) {

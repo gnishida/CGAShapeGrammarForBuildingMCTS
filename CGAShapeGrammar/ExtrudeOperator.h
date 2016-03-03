@@ -6,7 +6,7 @@ namespace cga {
 
 class ExtrudeOperator : public Operator {
 private:
-	//std::string height;
+	std::string height;
 
 public:
 	ExtrudeOperator(const std::string& height);
