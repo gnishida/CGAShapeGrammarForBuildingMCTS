@@ -215,13 +215,14 @@ namespace mcts {
 		boost::shared_ptr<MCTSTreeNode> node = boost::shared_ptr<MCTSTreeNode>(new MCTSTreeNode(state));
 
 		for (int iter = 0; iter < maxDerivationSteps; ++iter) {
-			std::cout << "iter: " << (iter + 1) << std::endl;
+			std::cout << "iter: " << (iter + 1);
 
-			int best_action = mcts(node, maxMCTSIterations);
+			boost::shared_ptr<MCTSTreeNode> best_child = mcts(node, maxMCTSIterations);
+			std::cout << ", val=" << best_child->bestValue << std::endl;
 
 			// 次のルートノードを作成
 			State child_state = node->state.clone();
-			child_state.applyAction(best_action);
+			child_state.applyAction(best_child->selectedAction);
 			node = boost::shared_ptr<MCTSTreeNode>(new MCTSTreeNode(child_state));
 			
 			////////////////////////////////////////////// DEBUG //////////////////////////////////////////////
@@ -278,7 +279,7 @@ namespace mcts {
 	 * @param maxMCTSIterations		MCTSアルゴリズムを何回走らせるか
 	 * @return						新しいstate
 	 */
-	int MCTS::mcts(const boost::shared_ptr<MCTSTreeNode>& rootNode, int maxMCTSIterations) {
+	boost::shared_ptr<MCTSTreeNode> MCTS::mcts(const boost::shared_ptr<MCTSTreeNode>& rootNode, int maxMCTSIterations) {
 		//boost::shared_ptr<MCTSTreeNode> rootNode = boost::shared_ptr<MCTSTreeNode>(new MCTSTreeNode(state));
 		for (int iter = 0; iter < maxMCTSIterations; ++iter) {
 			// MCTS selection
@@ -322,7 +323,7 @@ namespace mcts {
 		file.close();
 		////////////////////////////////////////////// DEBUG //////////////////////////////////////////////
 
-		return rootNode->bestChild()->selectedAction;
+		return rootNode->bestChild();
 	}
 
 	boost::shared_ptr<MCTSTreeNode> MCTS::select(const boost::shared_ptr<MCTSTreeNode>& rootNode) {

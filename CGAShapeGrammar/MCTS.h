@@ -85,7 +85,7 @@ namespace mcts {
 
 		State inverse(int maxDerivationSteps, int maxMCTSIterations);
 		//void randomGeneration(RenderManager* renderManager);
-		int mcts(const boost::shared_ptr<MCTSTreeNode>& rootNode, int maxMCTSIterations);
+		boost::shared_ptr<MCTSTreeNode> mcts(const boost::shared_ptr<MCTSTreeNode>& rootNode, int maxMCTSIterations);
 		boost::shared_ptr<MCTSTreeNode> select(const boost::shared_ptr<MCTSTreeNode>& rootNode);
 		boost::shared_ptr<MCTSTreeNode> expand(const boost::shared_ptr<MCTSTreeNode>& leafNode);
 		float simulate(const boost::shared_ptr<MCTSTreeNode>& childNode);
