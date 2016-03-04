@@ -101,17 +101,17 @@ namespace mcmc {
 
 			//std::cout << "Iter: " << (iter + 1) << ", value = " << current_value << std::endl;
 
-			if (iter % 100 == 0) {
+			if ((iter + 1) % 100 == 0) {
 				QString filename = QString("results_mcmc/result_%1.png").arg(iter);
 				QImage best_image = render(best_grammar);
 				best_image.save(filename);
 
 				std::cout << "--------------------------------------------------------" << std::endl;
-				std::cout << "Iter: " << iter << ", Best value: " << best_value << std::endl;
+				std::cout << "Iter: " << (iter + 1) << ", Best value: " << best_value << std::endl;
 				time_t end = clock();
 				std::cout << "Time elapsed: " << (double)(end - start) / CLOCKS_PER_SEC << "sec" << std::endl;
 
-				out << iter << "," << best_value << "\n";
+				out << (iter + 1) << "," << best_value << "\n";
 			}
 
 			////////////////////////////////////////////// DEBUG //////////////////////////////////////////////
