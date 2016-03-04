@@ -107,11 +107,11 @@ namespace mcmc {
 				best_image.save(filename);
 
 				std::cout << "--------------------------------------------------------" << std::endl;
-				std::cout << "Iter: " << (iter + 1) << ", Best value: " << best_value << std::endl;
+				std::cout << "Iter: " << iter << ", Best value: " << best_value << std::endl;
 				time_t end = clock();
 				std::cout << "Time elapsed: " << (double)(end - start) / CLOCKS_PER_SEC << "sec" << std::endl;
 
-				out << (iter + 1) << "," << best_value << "\n";
+				out << iter << "," << best_value << "\n";
 			}
 
 			////////////////////////////////////////////// DEBUG //////////////////////////////////////////////
