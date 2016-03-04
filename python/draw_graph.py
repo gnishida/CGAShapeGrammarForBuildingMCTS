@@ -19,6 +19,9 @@ def main(data_file):
 		y.append(data[1])
 
 	plt.plot(x, y)
+	plt.ylim(0,0.5)
+	plt.xlabel('#iterations')
+	plt.ylabel('score')
 	plt.show()
 
 if __name__ == '__main__':
