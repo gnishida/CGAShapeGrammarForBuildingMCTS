@@ -11,6 +11,57 @@ namespace mcmc {
 	const float SIMILARITY_METRICS_ALPHA = 1000.0f;
 	const float SIMILARITY_METRICS_BETA = 1000.0f;
 
+	Chain::Chain(const cga::Grammar& grammar, float T) {
+		this->grammar = grammar;
+		this->T = T;
+
+		// initialize the paramter values
+		for (auto it = this->grammar.attrs.begin(); it != this->grammar.attrs.end(); ++it) {
+			float range = it->second.range_end - it->second.range_start;
+			it->second.value = std::to_string(range / 9.0f * (rand() % 10) + it->second.range_start);
+		}
+	}
+
+	void Chain::generateProposal() {
+		next_grammar = grammar;
+
+		// next_grammarのパラメータ値を変更する
+		for (auto it = next_grammar.attrs.begin(); it != next_grammar.attrs.end(); ++it) {
+			float range = it->second.range_end - it->second.range_start;
+			float unit = range / 9.0f;
+			int index = (std::stof(it->second.value) - it->second.range_start) / unit;
+			int r = rand() % 3;
+
+			if (r == 0) {
+				index = std::max(0, index - 1);
+			}
+			else if (r == 2) {
+				index = std::min(9, index + 1);
+			}
+
+			it->second.value = std::to_string(unit * index + it->second.range_start);
+		}
+	}
+
+	void Chain::update() {
+		// update the best grammar
+		if (next_E < best_E) {
+			best_E = next_E;
+			best_grammar = next_grammar;
+		}
+
+		// Metropolis
+		float acceptance_ratio = std::min(1.0f, exp(-next_E/T) / exp(-E/T));
+		if ((rand() % 100) / 100.0f < acceptance_ratio) {
+			grammar = next_grammar;
+			E = next_E;
+		}
+
+		// decrease T
+		//T = T / 1.0001f;
+	}
+
+
 	MCMC::MCMC(const cv::Mat& target, GLWidget3D* glWidget, cga::Grammar grammar) {
 		this->target = target;
 		this->glWidget = glWidget;
@@ -42,76 +93,35 @@ namespace mcmc {
 		file.open(QIODevice::WriteOnly);
 		QTextStream out(&file);
 		
-		// initialize the paramter values
-		for (auto it = current_grammar.attrs.begin(); it != current_grammar.attrs.end(); ++it) {
-			float range = it->second.range_end - it->second.range_start;
-			it->second.value = std::to_string(range / 9.0f * (rand() % 10) + it->second.range_start);		
-		}
-
-		QImage current_image = render(current_grammar);
-		////////////////////////////////////////////// DEBUG //////////////////////////////////////////////
-		//current_image.save("results_mcmc/initial.png");
-		////////////////////////////////////////////// DEBUG //////////////////////////////////////////////
-		float current_value = evaluate(current_image, T);
-
-		// initialize the best grammar
-		float best_value = current_value;
-		cga::Grammar best_grammar = current_grammar;
+		// initialize chain
+		Chain chain1(orig_grammar, 1.0f);
+		chain1.E = evaluate(render(chain1.grammar));
+		chain1.best_grammar = chain1.grammar;
+		chain1.best_E = chain1.E;
 		
 		for (int iter = 0; iter < maxIterations; ++iter) {
 			cga::Grammar next_grammar = current_grammar;
 
 			// next_grammarのパラメータ値を変更する
-			for (auto it = next_grammar.attrs.begin(); it != next_grammar.attrs.end(); ++it) {
-				float range = it->second.range_end - it->second.range_start;
-				float unit = range / 9.0f;
-				int index = (std::stof(it->second.value) - it->second.range_start) / unit;
-				int r = rand() % 3;
-
-				if (r == 0) {
-					index = std::max(0, index - 1);
-				}
-				else if (r == 2) {
-					index = std::min(9, index + 1);
-				}
-				
-				it->second.value = std::to_string(unit * index + it->second.range_start);
-			}
-
-			QImage next_image = render(next_grammar);
-
-			// next_grammarのスコアを計算する
-			float next_value = evaluate(next_image, T);
-
-			// update the best grammar
-			if (next_value > best_value) {
-				best_value = next_value;
-				best_grammar = next_grammar;
-			}
-
-			// Metropolis
-			float acceptance_ratio = std::min(1.0f, next_value / current_value);
-			if ((rand() % 100) / 100.0f < acceptance_ratio) {
-				current_grammar = next_grammar;
-				current_value = next_value;
-			}
-
-			// decrease T
-			//T = T / 1.001f;
-
-			//std::cout << "Iter: " << (iter + 1) << ", value = " << current_value << std::endl;
+			chain1.generateProposal();
+			chain1.next_E = evaluate(render(chain1.next_grammar));
+			chain1.update();
 
 			if ((iter + 1) % 100 == 0) {
-				QString filename = QString("results_mcmc/result_%1.png").arg(iter);
-				QImage best_image = render(best_grammar);
+				float best_E;
+				QImage best_image = render(chain1.best_grammar);
+				best_E = chain1.best_E;
+				best_image = render(chain1.best_grammar);
+
+				QString filename = QString("results_mcmc/result_%1.png").arg(iter + 1);
 				best_image.save(filename);
 
 				std::cout << "--------------------------------------------------------" << std::endl;
-				std::cout << "Iter: " << (iter + 1) << ", Best value: " << best_value << std::endl;
+				std::cout << "Iter: " << (iter + 1) << ", Best value: " << best_E << std::endl;
 				time_t end = clock();
 				std::cout << "Time elapsed: " << (double)(end - start) / CLOCKS_PER_SEC << "sec" << std::endl;
 
-				out << (iter + 1) << "," << best_value << "\n";
+				out << (iter + 1) << "," << best_E << "\n";
 			}
 
 			////////////////////////////////////////////// DEBUG //////////////////////////////////////////////
@@ -132,8 +142,12 @@ namespace mcmc {
 		time_t end = clock();
 		std::cout << "Time elapsed: " << (double)(end - start) / CLOCKS_PER_SEC << "sec" << std::endl;
 
-		std::cout << "Best value: " << best_value << std::endl;
-		render(best_grammar);
+		float best_E;
+		QImage best_image = render(chain1.best_grammar);
+		best_E = chain1.best_E;
+		render(chain1.best_grammar);
+		
+		std::cout << "Best value: " << best_E << std::endl;
 	}
 
 	QImage MCMC::render(cga::Grammar& grammar) {
@@ -153,7 +167,7 @@ namespace mcmc {
 		return glWidget->grabFrameBuffer();
 	}
 
-	float MCMC::evaluate(QImage& image, float T) {
+	float MCMC::evaluate(QImage& image) {
 		// convert to gray scale image
 		cv::Mat sourceImage(image.height(), image.width(), CV_8UC4, image.bits(), image.bytesPerLine());
 		cv::Mat grayImage;
@@ -163,10 +177,10 @@ namespace mcmc {
 		cv::Mat distMap;
 		cv::distanceTransform(grayImage, distMap, CV_DIST_L2, 3);
 
-		return similarity(distMap, targetDistMap, SIMILARITY_METRICS_ALPHA, SIMILARITY_METRICS_BETA, T);
+		return distance(distMap, targetDistMap, SIMILARITY_METRICS_ALPHA, SIMILARITY_METRICS_BETA);
 	}
 
-	float similarity(const cv::Mat& distMap, const cv::Mat& targetDistMap, float alpha, float beta, float T) {
+	float distance(const cv::Mat& distMap, const cv::Mat& targetDistMap, float alpha, float beta) {
 		float dist1 = 0.0f;
 		float dist2 = 0.0f;
 
@@ -188,7 +202,8 @@ namespace mcmc {
 
 		float dist = alpha * dist1 + beta * dist2;
 
-		return expf(-dist / T);
+		return dist;
+		//return expf(-dist / T);
 
 	}
 }

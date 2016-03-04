@@ -13,6 +13,26 @@ class GLWidget3D;
 class RenderManager;
 
 namespace mcmc {
+	class Chain {
+	public:
+		cga::Grammar grammar;
+		QImage image;
+		float E;
+		float T;
+
+		cga::Grammar next_grammar;
+		QImage next_image;
+		float next_E;
+
+		cga::Grammar best_grammar;
+		float best_E;
+
+	public:
+		Chain(const cga::Grammar& grammar, float T);
+		void generateProposal();
+		void update();
+	};
+
 	class MCMC {
 	private:
 		cv::Mat target;
@@ -25,8 +45,8 @@ namespace mcmc {
 
 		void run(int maxIterations);
 		QImage render(cga::Grammar& gramamr);
-		float evaluate(QImage& image, float T);
+		float evaluate(QImage& image);
 	};
 
-	float similarity(const cv::Mat& distMap, const cv::Mat& targetDistMap, float alpha, float beta, float T);
+	float distance(const cv::Mat& distMap, const cv::Mat& targetDistMap, float alpha, float beta);
 }
