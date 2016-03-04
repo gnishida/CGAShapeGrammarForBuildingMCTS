@@ -104,9 +104,7 @@ namespace mcts {
 	MCTSTreeNode::MCTSTreeNode(const State& state) {
 		visits = 0;
 		bestValue = 0;
-		meanValue = 0;
 		valueFixed = false;
-		varianceValues = 0;
 		this->state = state;
 		parent = NULL;
 
@@ -158,21 +156,9 @@ namespace mcts {
 	}
 
 	void MCTSTreeNode::addValue(float value) {
-		values.push_back(value);
 		if (value > bestValue) {
 			bestValue = value;
 		}
-
-		// compute the variance
-		float total_val = 0.0f;
-		float total_val2 = 0.0f;
-		for (int i = 0; i < values.size(); ++i) {
-			total_val = values[i];
-			total_val2 = values[i] * values[i];
-		}
-
-		meanValue = total_val / values.size();
-		varianceValues = total_val2 / values.size() - meanValue * meanValue;
 	}
 
 	int MCTSTreeNode::randomlySelectAction() {
@@ -223,6 +209,7 @@ namespace mcts {
 			// 次のルートノードを作成
 			State child_state = node->state.clone();
 			child_state.applyAction(best_child->selectedAction);
+			node.reset();
 			node = boost::shared_ptr<MCTSTreeNode>(new MCTSTreeNode(child_state));
 			
 			////////////////////////////////////////////// DEBUG //////////////////////////////////////////////
@@ -248,12 +235,19 @@ namespace mcts {
 		std::cout << "Simulate: " << time_simulate << std::endl;
 		std::cout << "Back: " << time_backpropagate << std::endl;
 
+
+
 		////////////////////////////////////////////// DEBUG //////////////////////////////////////////////
 		for (auto it = node->state.grammar.attrs.begin(); it != node->state.grammar.attrs.end(); ++it) {
-			std::cout << "param: " << it->first << " = " << it->second.value << std::endl;
+			float error_ratio = 0.0f;
+			if (grammar.attrs.find(it->first) != grammar.attrs.end() && grammar.attrs[it->first].hasRange) {
+				float range = grammar.attrs[it->first].range_end - grammar.attrs[it->first].range_start;
+				float unit = range / 9.0f;
+				error_ratio = fabs(std::stof(it->second.value) - std::stof(grammar.attrs[it->first].value)) / unit * 0.2f;
+			}
+			std::cout << "param: " << it->first << " = " << it->second.value << " (Error ratio: " << error_ratio << ")" << std::endl;
 		}
 		////////////////////////////////////////////// DEBUG //////////////////////////////////////////////
-
 
 		return node->state;
 	}

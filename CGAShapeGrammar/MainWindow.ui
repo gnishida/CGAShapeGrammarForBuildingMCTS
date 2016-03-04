@@ -51,7 +51,9 @@
      <string>Tool</string>
     </property>
     <addaction name="actionGenerateBuildingImages"/>
+    <addaction name="separator"/>
     <addaction name="actionMCTS"/>
+    <addaction name="actionMCMC"/>
    </widget>
    <addaction name="menuFile"/>
    <addaction name="menuView"/>
@@ -206,6 +208,11 @@
   <action name="actionMCTS">
    <property name="text">
     <string>MCTS</string>
+   </property>
+  </action>
+  <action name="actionMCMC">
+   <property name="text">
+    <string>MCMC</string>
    </property>
   </action>
  </widget>

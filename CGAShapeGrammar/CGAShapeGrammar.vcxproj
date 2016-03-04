@@ -189,6 +189,7 @@
     <ClCompile Include="LShapeTaper.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="MainWindow.cpp" />
+    <ClCompile Include="MCMC.cpp" />
     <ClCompile Include="MCTS.cpp" />
     <ClCompile Include="NumberEval.cpp" />
     <ClCompile Include="OBJLoader.cpp" />
@@ -295,6 +296,7 @@
     <ClInclude Include="LShape.h" />
     <ClInclude Include="LShapePrism.h" />
     <ClInclude Include="LShapeTaper.h" />
+    <ClInclude Include="MCMC.h" />
     <ClInclude Include="MCTS.h" />
     <ClInclude Include="NumberEval.h" />
     <ClInclude Include="OBJLoader.h" />

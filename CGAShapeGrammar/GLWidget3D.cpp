@@ -16,6 +16,7 @@
 #include "EDLinesLib.h"
 #include <QProcess>
 #include "MCTS.h"
+#include "MCMC.h"
 
 GLWidget3D::GLWidget3D(MainWindow *parent) : QGLWidget(QGLFormat(QGL::SampleBuffers)) {
 	this->mainWin = parent;
@@ -593,7 +594,27 @@ void GLWidget3D::runMCTS() {
 	//cga::parseGrammar("../cga/simple_building.xml", grammar);
 
 	mcts::MCTS mcts(input, this, grammar);
-	mcts.inverse(1000, 3000);
+	mcts.inverse(1000, 300);
+}
+
+void GLWidget3D::runMCMC() {
+	// fix camera view direction and position
+	camera.xrot = 0.0f;
+	camera.yrot = -40.0f;
+	camera.zrot = 0.0f;
+	camera.pos = glm::vec3(0, 10, 50);
+	camera.updateMVPMatrix();
+
+
+	cv::Mat input = cv::imread("user_input.png");
+	//cv::Mat input = cv::imread("user_input_simple.png");
+
+	cga::Grammar grammar;
+	cga::parseGrammar("../cga/building.xml", grammar);
+	//cga::parseGrammar("../cga/simple_building.xml", grammar);
+
+	mcmc::MCMC mcmc(input, this, grammar);
+	mcmc.run(10000);
 }
 
 /**

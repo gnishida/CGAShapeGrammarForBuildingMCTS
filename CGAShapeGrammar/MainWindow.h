@@ -26,6 +26,7 @@ public slots:
 	void onViewRefresh();
 	void onGenerateBuildingImages();
 	void onMCTS();
+	void onMCMC();
 };
 
 #endif // MAINWINDOW_H

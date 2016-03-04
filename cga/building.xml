@@ -5,10 +5,10 @@
 	<attr name="building_y" value="-10" range="-14,-5"/>
 	<attr name="building_width" value="28" range="25,34"/>
 	<attr name="building_depth" value="20" range="15,24"/>
-	<attr name="building_height" value="20" range="10,29"/>
+	<attr name="building_height" value="20" range="10,28"/>
 	<attr name="gfloor_height" value="8" range="3.5,8"/>
 	<attr name="floor_height" value="5" range="3,5.25"/>
-	<attr name="corner_width" value="1" range="0,2.7"/>
+	<attr name="corner_width" value="1" range="0,1.8"/>
 	<attr name="corner_height" value="0.5" range="0,0.9"/>
 	<attr name="floor_segment_width" value="10" range="4,22"/>
 	<attr name="ground_tile_width" value="5" range="2,8.3"/>

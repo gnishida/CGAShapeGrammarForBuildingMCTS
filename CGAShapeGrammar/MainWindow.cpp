@@ -26,6 +26,7 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent) {
 	connect(ui.actionViewSketchyRendering, SIGNAL(triggered()), this, SLOT(onViewRendering()));
 	connect(ui.actionViewRefresh, SIGNAL(triggered()), this, SLOT(onViewRefresh()));
 	connect(ui.actionMCTS, SIGNAL(triggered()), this, SLOT(onMCTS()));
+	connect(ui.actionMCMC, SIGNAL(triggered()), this, SLOT(onMCMC()));
 
 	connect(ui.actionGenerateBuildingImages, SIGNAL(triggered()), this, SLOT(onGenerateBuildingImages()));
 
@@ -91,4 +92,8 @@ void MainWindow::onGenerateBuildingImages() {
 
 void MainWindow::onMCTS() {
 	glWidget->runMCTS();
+}
+
+void MainWindow::onMCMC() {
+	glWidget->runMCMC();
 }

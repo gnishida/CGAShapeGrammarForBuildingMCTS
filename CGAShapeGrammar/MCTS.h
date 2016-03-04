@@ -55,10 +55,7 @@ namespace mcts {
 	public:
 		int visits;
 		float bestValue;
-		float meanValue;
 		bool valueFixed;
-		std::vector<float> values;
-		float varianceValues;
 		State state;
 		boost::shared_ptr<MCTSTreeNode> parent;
 		std::vector<boost::shared_ptr<MCTSTreeNode> > children;
