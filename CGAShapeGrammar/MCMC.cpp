@@ -58,7 +58,7 @@ namespace mcmc {
 		}
 
 		// decrease T
-		T = T / 1.0001f;
+		//T = T / 1.0001f;
 	}
 
 
@@ -99,46 +99,19 @@ namespace mcmc {
 		chain1.best_grammar = chain1.grammar;
 		chain1.best_E = chain1.E;
 		
-		Chain chain2(orig_grammar, 10.0f);
-		chain2.E = evaluate(render(chain2.grammar));
-		chain2.best_grammar = chain2.grammar;
-		chain2.best_E = chain2.E;
-
-
 		for (int iter = 0; iter < maxIterations; ++iter) {
 			cga::Grammar next_grammar = current_grammar;
 
-			if (rand() % 10 == 0) {
-				// swap
-				float p = std::min(1.0f, expf(-chain2.E / chain1.T - chain1.E / chain2.T) / expf(-chain1.E / chain1.T - chain2.E / chain2.T));
-				if ((rand() % 100) / 100.0f < p) {
-					std::swap(chain1.T, chain2.T);
-				}
-			}
-			else {
-				// next_grammarのパラメータ値を変更する
-				chain1.generateProposal();
-				chain2.generateProposal();
-
-				chain1.next_E = evaluate(render(chain1.next_grammar));
-				chain2.next_E = evaluate(render(chain2.next_grammar));
-
-				chain1.update();
-				chain2.update();
-			}
-
+			// next_grammarのパラメータ値を変更する
+			chain1.generateProposal();
+			chain1.next_E = evaluate(render(chain1.next_grammar));
+			chain1.update();
 
 			if ((iter + 1) % 100 == 0) {
 				float best_E;
 				QImage best_image = render(chain1.best_grammar);
-				if (chain1.best_E < chain2.best_E) {
-					best_E = chain1.best_E;
-					best_image = render(chain1.best_grammar);
-				}
-				else {
-					best_E = chain2.best_E;
-					best_image = render(chain2.best_grammar);
-				}
+				best_E = chain1.best_E;
+				best_image = render(chain1.best_grammar);
 
 				QString filename = QString("results_mcmc/result_%1.png").arg(iter + 1);
 				best_image.save(filename);
@@ -171,14 +144,8 @@ namespace mcmc {
 
 		float best_E;
 		QImage best_image = render(chain1.best_grammar);
-		if (chain1.best_E < chain2.best_E) {
-			best_E = chain1.best_E;
-			render(chain1.best_grammar);
-		}
-		else {
-			best_E = chain2.best_E;
-			render(chain2.best_grammar);
-		}
+		best_E = chain1.best_E;
+		render(chain1.best_grammar);
 		
 		std::cout << "Best value: " << best_E << std::endl;
 	}
