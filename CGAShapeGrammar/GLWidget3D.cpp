@@ -614,7 +614,7 @@ void GLWidget3D::runMCMC() {
 	//cga::parseGrammar("../cga/simple_building.xml", grammar);
 
 	mcmc::MCMC mcmc(input, this, grammar);
-	mcmc.run(10000);
+	mcmc.run(7000);
 }
 
 /**
