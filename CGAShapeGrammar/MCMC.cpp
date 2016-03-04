@@ -98,7 +98,8 @@ namespace mcmc {
 
 			if (iter % 100 == 0) {
 				QString filename = QString("results_mcmc/result_%1.png").arg(iter);
-				next_image.save(filename);
+				QImage best_image = render(best_grammar);
+				best_image.save(filename);
 
 				std::cout << "--------------------------------------------------------" << std::endl;
 				std::cout << "Iter: " << (iter + 1) << ", Best value: " << best_value << std::endl;
