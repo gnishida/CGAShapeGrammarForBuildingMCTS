@@ -58,7 +58,7 @@ namespace mcmc {
 		}
 
 		// decrease T
-		//T = T / 1.0001f;
+		T = T / 1.00001f;
 	}
 
 
@@ -98,7 +98,12 @@ namespace mcmc {
 		chain1.E = evaluate(render(chain1.grammar));
 		chain1.best_grammar = chain1.grammar;
 		chain1.best_E = chain1.E;
-		
+
+		Chain chain2(orig_grammar, 2.0f);
+		chain2.E = evaluate(render(chain2.grammar));
+		chain2.best_grammar = chain2.grammar;
+		chain2.best_E = chain2.E;
+
 		for (int iter = 0; iter < maxIterations; ++iter) {
 			cga::Grammar next_grammar = current_grammar;
 
@@ -106,12 +111,25 @@ namespace mcmc {
 			chain1.generateProposal();
 			chain1.next_E = evaluate(render(chain1.next_grammar));
 			chain1.update();
+	
+			chain2.generateProposal();
+			chain2.next_E = evaluate(render(chain2.next_grammar));
+			chain2.update();
 
 			if ((iter + 1) % 100 == 0) {
 				float best_E;
-				QImage best_image = render(chain1.best_grammar);
-				best_E = chain1.best_E;
-				best_image = render(chain1.best_grammar);
+				QImage best_image;
+
+				if (chain1.best_E < chain2.best_E) {
+					best_image = render(chain1.best_grammar);
+					best_E = chain1.best_E;
+					best_image = render(chain1.best_grammar);
+				}
+				else {
+					best_image = render(chain2.best_grammar);
+					best_E = chain2.best_E;
+					best_image = render(chain2.best_grammar);
+				}
 
 				QString filename = QString("results_mcmc/result_%1.png").arg(iter + 1);
 				best_image.save(filename);
@@ -143,9 +161,14 @@ namespace mcmc {
 		std::cout << "Time elapsed: " << (double)(end - start) / CLOCKS_PER_SEC << "sec" << std::endl;
 
 		float best_E;
-		QImage best_image = render(chain1.best_grammar);
-		best_E = chain1.best_E;
-		render(chain1.best_grammar);
+		if (chain1.best_E < chain2.best_E) {
+			best_E = chain1.best_E;
+			render(chain1.best_grammar);
+		}
+		else {
+			best_E = chain2.best_E;
+			render(chain2.best_grammar);
+		}
 		
 		std::cout << "Best value: " << best_E << std::endl;
 	}
