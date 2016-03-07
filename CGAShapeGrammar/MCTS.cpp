@@ -103,7 +103,7 @@ namespace mcts {
 
 	MCTSTreeNode::MCTSTreeNode(const State& state) {
 		visits = 0;
-		bestValue = 0;
+		bestValue = std::numeric_limits<float>::max();
 		valueFixed = false;
 		this->state = state;
 		parent = NULL;
@@ -127,7 +127,7 @@ namespace mcts {
 				uct = 10000 + rand() % 1000;
 			}
 			else {
-				uct = children[i]->bestValue
+				uct = expf(-children[i]->bestValue)
 					+ PARAM_EXPLORATION * sqrt(2 * log((double)visits) / (double)children[i]->visits);
 					//+ PARAM_EXPLORATION_VARIANCE * sqrt(children[i]->varianceValues + 0.0 / (double)children[i]->visits);
 			}
@@ -142,11 +142,11 @@ namespace mcts {
 	}
 
 	boost::shared_ptr<MCTSTreeNode> MCTSTreeNode::bestChild() {
-		double bestValue = -std::numeric_limits<double>::max();
+		double bestValue = std::numeric_limits<double>::max();
 		boost::shared_ptr<MCTSTreeNode> bestChild = NULL;
 
 		for (int i = 0; i < children.size(); ++i) {
-			if (children[i]->bestValue > bestValue) {
+			if (children[i]->bestValue < bestValue) {
 				bestValue = children[i]->bestValue;
 				bestChild = children[i];
 			}
@@ -156,7 +156,7 @@ namespace mcts {
 	}
 
 	void MCTSTreeNode::addValue(float value) {
-		if (value > bestValue) {
+		if (value < bestValue) {
 			bestValue = value;
 		}
 	}
@@ -204,7 +204,7 @@ namespace mcts {
 			std::cout << "iter: " << (iter + 1);
 
 			boost::shared_ptr<MCTSTreeNode> best_child = mcts(node, maxMCTSIterations);
-			std::cout << ", val=" << best_child->bestValue << std::endl;
+			std::cout << ", E=" << best_child->bestValue << ", val=" << expf(-best_child->bestValue) << std::endl;
 
 			// 次のルートノードを作成
 			State child_state = node->state.clone();
@@ -290,13 +290,13 @@ namespace mcts {
 
 			// MCTS simulation
 			start = clock();
-			float value = simulate(childNode);
+			float energy = simulate(childNode);
 			end = clock();
 			time_simulate += (double)(end - start) / CLOCKS_PER_SEC;
 
 			// MCTS backpropagation
 			start = clock();
-			backpropage(childNode, value);
+			backpropage(childNode, energy);
 			end = clock();
 			time_backpropagate += (double)(end - start) / CLOCKS_PER_SEC;
 
@@ -311,7 +311,7 @@ namespace mcts {
 		QTextStream out(&file);
 		for (int i = 0; i < rootNode->children.size(); ++i) {
 			if (i > 0) out << ",";
-			out << rootNode->children[i]->selectedAction << "(#visits: " << rootNode->children[i]->visits << ", #val: " << rootNode->children[i]->bestValue << ")";
+			out << rootNode->children[i]->selectedAction << "(#visits: " << rootNode->children[i]->visits << ", E: " << rootNode->children[i]->bestValue << ", val: " << expf(-rootNode->children[i]->bestValue) << ")";
 		}
 		out << "\n";
 		file.close();
@@ -362,7 +362,7 @@ namespace mcts {
 		return evaluate(state.derivationTree);
 	}
 
-	void MCTS::backpropage(const boost::shared_ptr<MCTSTreeNode>& childNode, float value) {
+	void MCTS::backpropage(const boost::shared_ptr<MCTSTreeNode>& childNode, float energy) {
 		boost::shared_ptr<MCTSTreeNode> node = childNode;
 
 		// リーフノードなら、スコアを確定する
@@ -372,7 +372,7 @@ namespace mcts {
 
 		while (node != NULL) {
 			node->visits++;
-			node->addValue(value);
+			node->addValue(energy);
 
 			// 子ノードが全て展開済みで、且つ、スコア確定済みなら、このノードのスコアも確定とする
 			if (node->unexpandedActions.size() == 0) {
@@ -411,7 +411,7 @@ namespace mcts {
 		distMap.convertTo(distMap, CV_32F);
 
 		// compute the squared difference
-		return similarity(distMap, targetDistMap, SIMILARITY_METRICS_ALPHA, SIMILARITY_METRICS_BETA);
+		return distance(distMap, targetDistMap, SIMILARITY_METRICS_ALPHA, SIMILARITY_METRICS_BETA);
 	}
 
 	void MCTS::render(const DerivationTree& derivationTree, QImage& image) {
@@ -481,8 +481,8 @@ namespace mcts {
 			it->second.value = std::to_string((it->second.range_end - it->second.range_start) / 9 * (rand() % 10) + it->second.range_start);
 		}
 
-		for (int iter = 0; iter < SIMULATION_DEPTH && !queue.empty(); ++iter) {
-		//while (!queue.empty()) {
+		//for (int iter = 0; iter < SIMULATION_DEPTH && !queue.empty(); ++iter) {
+		while (!queue.empty()) {
 			boost::shared_ptr<Nonterminal> nonterminal = queue.front();
 			queue.pop_front();
 
@@ -566,7 +566,7 @@ namespace mcts {
 		}
 	}
 
-	float similarity(const cv::Mat& distMap, const cv::Mat& targetDistMap, float alpha, float beta) {
+	float distance(const cv::Mat& distMap, const cv::Mat& targetDistMap, float alpha, float beta) {
 		float dist1 = 0.0f;
 		float dist2 = 0.0f;
 
@@ -588,7 +588,8 @@ namespace mcts {
 
 		float dist = alpha * dist1 + beta * dist2;
 
-		return expf(-dist);
+		return dist;
+		//return expf(-dist);
 
 	}
 

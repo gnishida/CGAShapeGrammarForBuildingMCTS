@@ -86,7 +86,7 @@ namespace mcts {
 		boost::shared_ptr<MCTSTreeNode> select(const boost::shared_ptr<MCTSTreeNode>& rootNode);
 		boost::shared_ptr<MCTSTreeNode> expand(const boost::shared_ptr<MCTSTreeNode>& leafNode);
 		float simulate(const boost::shared_ptr<MCTSTreeNode>& childNode);
-		void backpropage(const boost::shared_ptr<MCTSTreeNode>& childNode, float value);
+		void backpropage(const boost::shared_ptr<MCTSTreeNode>& childNode, float energy);
 		float evaluate(const DerivationTree& derivationTree);
 		void render(const DerivationTree& derivationTree, QImage& image);
 		void generateGeometry(RenderManager* renderManager, const glm::mat4& modelMat, const boost::shared_ptr<Nonterminal>& node, std::vector<boost::shared_ptr<glutils::Face> >& faces);
@@ -95,6 +95,6 @@ namespace mcts {
 	std::vector<int> actions(const boost::shared_ptr<Nonterminal>& nonterminal, const cga::Grammar& grammar);
 	void randomDerivation(DerivationTree& derivationTree, cga::Grammar& grammar, std::list<boost::shared_ptr<Nonterminal> >& queue);
 	void applyRule(boost::shared_ptr<Nonterminal>& nonterminal, int action, cga::Grammar& grammar, std::list<boost::shared_ptr<Nonterminal> >& queue);
-	float similarity(const cv::Mat& distMap, const cv::Mat& targetDistMap, float alpha, float beta);
+	float distance(const cv::Mat& distMap, const cv::Mat& targetDistMap, float alpha, float beta);
 
 }
